@@ -1,0 +1,141 @@
+# Site settings
+title: MyEtcd - 分布式键值存储系统
+description: >-
+  一个完整的分布式键值存储系统实现，用于学习分布式系统核心概念。
+  基于etcd设计理念，使用Go语言开发，包含WAL、ACID事务、Watch机制、
+  租约系统、Raft一致性算法等企业级功能。
+
+baseurl: "/MyEtcd"
+url: "https://evildoerxiaoyy.github.io"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-github-metadata
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .git/
+  - .github/
+  - bin/
+  - data/
+  - logs/
+  - "*.go"
+  - Makefile
+  - docker-compose.yml
+  - Dockerfile
+  - .dockerignore
+  - .gitignore
+  - go.mod
+  - go.sum
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Default values
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "docs"
+
+# Theme settings
+theme: minima
+minima:
+  skin: auto
+
+# Social links
+github_username: EvildoerXiaoyy
+
+# SEO settings
+twitter:
+  username: EvildoerXiaoyy
+  card: summary
+
+# Google Analytics (optional)
+google_analytics: # UA-XXXXXXXX-X
+
+# GitHub Metadata
+repository: EvildoerXiaoyy/MyEtcd
+
+# Navigation
+navigation:
+  - title: 首页
+    url: /
+  - title: 快速开始
+    url: /quickstart/
+  - title: 文档
+    url: /docs/
+  - title: 示例
+    url: /examples/
+  - title: API 参考
+    url: /api/
+  - title: 贡献
+    url: /contributing/
+
+# Sidebar
+sidebar:
+  - title: 快速开始
+    children:
+      - title: 安装和运行
+        url: /quickstart/installation/
+      - title: 基本使用
+        url: /quickstart/basic-usage/
+      - title: 配置说明
+        url: /quickstart/configuration/
+  - title: 核心概念
+    children:
+      - title: WAL 机制
+        url: /concepts/wal/
+      - title: ACID 事务
+        url: /concepts/acid/
+      - title: Watch 机制
+        url: /concepts/watch/
+      - title: 租约系统
+        url: /concepts/lease/
+      - title: Raft 算法
+        url: /concepts/raft/
+  - title: 开发指南
+    children:
+      - title: 架构设计
+        url: /development/architecture/
+      - title: 代码结构
+        url: /development/code-structure/
+      - title: 测试指南
+        url: /development/testing/
+      - title: 性能优化
+        url: /development/performance/
+  - title: 部署运维
+    children:
+      - title: Docker 部署
+        url: /deployment/docker/
+      - title: 集群部署
+        url: /deployment/cluster/
+      - title: 监控告警
+        url: /deployment/monitoring/
+      - title: 故障排查
+        url: /deployment/troubleshooting/
+
+# Footer links
+footer_links:
+  - title: GitHub
+    url: https://github.com/EvildoerXiaoyy/MyEtcd
+  - title: Issues
+    url: https://github.com/EvildoerXiaoyy/MyEtcd/issues
+  - title: Discussions
+    url: https://github.com/EvildoerXiaoyy/MyEtcd/discussions
