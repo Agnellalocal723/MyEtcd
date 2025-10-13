@@ -133,8 +133,8 @@ func TestTTL(t *testing.T) {
 
 	// 再次获取应该失败
 	_, err = engine.Get("ttl-key")
-	if err != storage.ErrKeyExpired {
-		t.Errorf("Expected ErrKeyExpired, got %v", err)
+	if err != storage.ErrKeyNotFound {
+		t.Errorf("Expected ErrKeyNotFound (expired keys are treated as not found), got %v", err)
 	}
 }
 

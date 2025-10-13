@@ -25,7 +25,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("=== MyEtcd 日志系统示例 ===\n")
+	fmt.Println("=== MyEtcd 日志系统示例 ===")
 
 	// 示例1: 基本日志记录
 	fmt.Println("1. 基本日志记录")

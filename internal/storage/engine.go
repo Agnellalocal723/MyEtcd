@@ -717,21 +717,39 @@ func (e *Engine) Range(key, rangeEnd string, limit int64) ([]*types.KeyValue, in
 			count = 1
 		}
 	} else {
-		// 范围查询
-		for k, kv := range e.data {
-			if kv.IsExpired() {
+		// 先收集所有符合条件的键
+		var keys []string
+		for k := range e.data {
+			if e.data[k].IsExpired() {
 				continue
 			}
+			if k >= key && k < rangeEnd {
+				keys = append(keys, k)
+			}
+		}
 
-			// 检查是否在范围内
-			if k >= key && (rangeEnd == "" || k < rangeEnd) {
-				result = append(result, e.copyKeyValue(kv))
-				count++
-
-				// 检查限制
-				if limit > 0 && int64(len(result)) >= limit {
-					break
+		// 对键进行排序
+		for i := 0; i < len(keys)-1; i++ {
+			for j := i + 1; j < len(keys); j++ {
+				if keys[i] > keys[j] {
+					keys[i], keys[j] = keys[j], keys[i]
 				}
+			}
+		}
+
+		// 计算总数
+		count = int64(len(keys))
+
+		// 应用限制并构建结果
+		maxItems := len(keys)
+		if limit > 0 && int64(len(keys)) > limit {
+			maxItems = int(limit)
+		}
+
+		for i := 0; i < maxItems; i++ {
+			k := keys[i]
+			if kv, exists := e.data[k]; exists {
+				result = append(result, e.copyKeyValue(kv))
 			}
 		}
 	}
