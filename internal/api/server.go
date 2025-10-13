@@ -387,7 +387,7 @@ func NewServer(engine *storage.Engine, config *types.Config) *Server {
 	mux.HandleFunc("/v1/txn", s.handleTransaction)
 	mux.HandleFunc("/v1/health", s.handleHealth)
 	mux.HandleFunc("/v1/status", s.handleStatus)
-	
+
 	// 添加指标端点
 	mux.Handle("/metrics", metrics.NewHandler())
 
@@ -445,7 +445,7 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request, key string) {
 	defer func() {
 		metrics.GetMetrics().ObserveStorageOperationDuration("GET", time.Since(start))
 	}()
-	
+
 	kv, err := s.engine.Get(key)
 	if err != nil {
 		if err == storage.ErrKeyNotFound || err == storage.ErrKeyExpired {
@@ -480,7 +480,7 @@ func (s *Server) handlePut(w http.ResponseWriter, r *http.Request, key string) {
 	defer func() {
 		metrics.GetMetrics().ObserveStorageOperationDuration("PUT", time.Since(start))
 	}()
-	
+
 	var req types.PutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		metrics.GetMetrics().RecordStorageOperation("PUT", "invalid_request")
@@ -559,26 +559,26 @@ func (s *Server) handleRange(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	var req types.RangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	kvs, count, err := s.engine.Range(req.Key, req.RangeEnd, req.Limit)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	response := types.RangeResponse{
 		Kvs:      kvs,
 		More:     req.Limit > 0 && int64(len(kvs)) < count,
 		Count:    count,
 		Revision: 0, // 简化实现，不维护版本号
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    response,
@@ -625,7 +625,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	// 解析请求参数
 	// WatchRequest包含：
 	// - Key：要监听的键
@@ -642,7 +642,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	// 创建Watch监听器
 	// 返回值：
 	// - watchID：唯一标识Watch
@@ -659,7 +659,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	// 设置SSE响应头
 	// 这些头部告诉浏览器：
 	// 1. Content-Type：事件流格式
@@ -670,7 +670,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	// 发送Watch ID确认
 	// 这是第一个事件，确认Watch创建成功
 	// 客户端应该等待这个确认后再处理后续事件
@@ -678,7 +678,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		WatchID: watchID,
 		Events:  []types.WatchEvent{},
 	}))
-	
+
 	// 立即刷新响应
 	// 为什么需要刷新？
 	// 1. 确保确认消息立即发送
@@ -688,7 +688,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
 	}
-	
+
 	// 发送事件流
 	// 这个循环会一直运行，直到：
 	// 1. 客户端断开连接
@@ -700,7 +700,7 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 			WatchID: watchID,
 			Events:  []types.WatchEvent{event},
 		}
-		
+
 		// 使用SSE格式发送事件
 		// 格式：data: {JSON}\n\n
 		// 为什么这种格式？
@@ -709,14 +709,14 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		// 3. 兼容：广泛支持
 		// 4. 扩展：支持事件类型和ID
 		fmt.Fprintf(w, "data: %s\n\n", mustMarshalJSON(response))
-		
+
 		// 刷新响应
 		// 确保事件立即发送给客户端
 		if flusher, ok := w.(http.Flusher); ok {
 			flusher.Flush()
 		}
 	}
-	
+
 	// 事件通道关闭，连接结束
 	// 资源清理：
 	// 1. 自动取消Watch
@@ -731,25 +731,25 @@ func (s *Server) handleWatchCancel(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	// 从URL路径中提取Watch ID
 	watchIDStr := strings.TrimPrefix(r.URL.Path, "/v1/watch/")
 	if watchIDStr == "" {
 		s.writeError(w, http.StatusBadRequest, "watch ID is required")
 		return
 	}
-	
+
 	var watchID int64
 	if _, err := fmt.Sscanf(watchIDStr, "%d", &watchID); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid watch ID")
 		return
 	}
-	
+
 	if err := s.engine.CancelWatch(watchID); err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    map[string]interface{}{"message": "watch cancelled"},
@@ -762,19 +762,19 @@ func (s *Server) handleBatch(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	var req types.BatchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	responses := make([]interface{}, 0, len(req.Operations))
-	
+
 	// 分离PUT和DELETE操作
 	puts := make(map[string][]byte)
 	deletes := []string{}
-	
+
 	for _, op := range req.Operations {
 		switch op.Op {
 		case "PUT":
@@ -786,7 +786,7 @@ func (s *Server) handleBatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	// 执行批量PUT
 	if len(puts) > 0 {
 		if err := s.engine.BatchPut(puts, 0); err != nil {
@@ -797,7 +797,7 @@ func (s *Server) handleBatch(w http.ResponseWriter, r *http.Request) {
 			responses = append(responses, map[string]string{"op": "PUT", "key": key, "status": "success"})
 		}
 	}
-	
+
 	// 执行批量DELETE
 	if len(deletes) > 0 {
 		if err := s.engine.BatchDelete(deletes); err != nil {
@@ -808,7 +808,7 @@ func (s *Server) handleBatch(w http.ResponseWriter, r *http.Request) {
 			responses = append(responses, map[string]string{"op": "DELETE", "key": key, "status": "success"})
 		}
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data: types.BatchResponse{
@@ -824,29 +824,29 @@ func (s *Server) handleLeaseGrant(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	var req types.LeaseGrantRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	if req.TTL <= 0 {
 		s.writeError(w, http.StatusBadRequest, "TTL must be positive")
 		return
 	}
-	
+
 	leaseID, err := s.engine.GrantLease(req.TTL)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	response := types.LeaseGrantResponse{
 		ID:  leaseID,
 		TTL: req.TTL,
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    response,
@@ -859,29 +859,29 @@ func (s *Server) handleLeaseRevoke(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	var req types.LeaseRevokeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	if req.ID <= 0 {
 		s.writeError(w, http.StatusBadRequest, "lease ID must be positive")
 		return
 	}
-	
+
 	if err := s.engine.RevokeLease(req.ID); err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	response := types.LeaseRevokeResponse{
 		Header: types.ResponseHeader{
 			Revision: 0, // 简化实现
 		},
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    response,
@@ -894,30 +894,30 @@ func (s *Server) handleLeaseKeepAlive(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	var req types.LeaseKeepAliveRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	
+
 	if req.ID <= 0 {
 		s.writeError(w, http.StatusBadRequest, "lease ID must be positive")
 		return
 	}
-	
+
 	ttl, err := s.engine.KeepAliveLease(req.ID)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	response := types.LeaseKeepAliveResponse{
 		ID:        req.ID,
 		TTL:       ttl,
 		Remaining: ttl, // 简化实现
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    response,
@@ -930,13 +930,13 @@ func (s *Server) handleLease(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	leases, err := s.engine.ListLeases()
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    leases,
@@ -949,26 +949,26 @@ func (s *Server) handleLeaseByID(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	
+
 	// 从URL路径中提取租约ID
 	leaseIDStr := strings.TrimPrefix(r.URL.Path, "/v1/lease/")
 	if leaseIDStr == "" {
 		s.writeError(w, http.StatusBadRequest, "lease ID is required")
 		return
 	}
-	
+
 	var leaseID int64
 	if _, err := fmt.Sscanf(leaseIDStr, "%d", &leaseID); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid lease ID")
 		return
 	}
-	
+
 	lease, err := s.engine.GetLease(leaseID)
 	if err != nil {
 		s.writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	
+
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data:    lease,
@@ -1002,7 +1002,7 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 
 	// 检查比较条件
 	conditionsMet := s.checkConditions(req.Compare)
-	
+
 	// 根据条件结果选择执行的操作
 	var operations []types.Request
 	if conditionsMet {
@@ -1144,13 +1144,13 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, types.Response{
 		Success: true,
 		Data: map[string]interface{}{
-			"version":     "1.0.0",
-			"keys_count":  s.engine.Size(),
-			"uptime":      time.Since(time.Now()).String(), // 这里应该记录启动时间
-			"data_dir":    s.config.DataDir,
-			"wal_dir":     s.config.WALDir,
+			"version":      "1.0.0",
+			"keys_count":   s.engine.Size(),
+			"uptime":       time.Since(time.Now()).String(), // 这里应该记录启动时间
+			"data_dir":     s.config.DataDir,
+			"wal_dir":      s.config.WALDir,
 			"snapshot_dir": s.config.SnapshotDir,
-			"watch_count": s.engine.GetWatchCount(),
+			"watch_count":  s.engine.GetWatchCount(),
 		},
 	})
 }
@@ -1159,7 +1159,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 func (s *Server) writeJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Printf("Failed to encode JSON response: %v", err)
 	}
@@ -1398,19 +1398,19 @@ func (c *Client) Watch(key string, prefix, prevKV bool) (int64, <-chan types.Wat
 		PrevKV:  prevKV,
 		WatchID: 0, // 服务器会分配
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/watch", req)
 	if err != nil {
 		return 0, nil, err
 	}
-	
+
 	// 读取响应流
 	eventChan := make(chan types.WatchEvent, 100)
-	
+
 	go func() {
 		defer resp.Body.Close()
 		defer close(eventChan)
-		
+
 		scanner := newScanner(resp.Body)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -1425,7 +1425,7 @@ func (c *Client) Watch(key string, prefix, prevKV bool) (int64, <-chan types.Wat
 			}
 		}
 	}()
-	
+
 	// 等待第一个响应获取Watch ID
 	select {
 	case <-eventChan:
@@ -1443,11 +1443,11 @@ func (c *Client) CancelWatch(watchID int64) error {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to cancel watch: status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 
@@ -1458,33 +1458,33 @@ func (c *Client) Range(key, rangeEnd string, limit int64) ([]*types.KeyValue, in
 		RangeEnd: rangeEnd,
 		Limit:    limit,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/range", req)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, 0, fmt.Errorf("failed to range query: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, 0, err
 	}
-	
+
 	// 解析范围查询响应
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	var rangeResp types.RangeResponse
 	if err := json.Unmarshal(dataBytes, &rangeResp); err != nil {
 		return nil, 0, err
 	}
-	
+
 	return rangeResp.Kvs, rangeResp.Count, nil
 }
 
@@ -1493,33 +1493,33 @@ func (c *Client) Batch(operations []types.Request) (*types.BatchResponse, error)
 	req := types.BatchRequest{
 		Operations: operations,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/batch", req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to execute batch: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	
+
 	// 解析批量响应
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var batchResp types.BatchResponse
 	if err := json.Unmarshal(dataBytes, &batchResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &batchResp, nil
 }
 
@@ -1528,33 +1528,33 @@ func (c *Client) GrantLease(ttl int64) (int64, error) {
 	req := types.LeaseGrantRequest{
 		TTL: ttl,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/lease/grant", req)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("failed to grant lease: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return 0, err
 	}
-	
+
 	// 解析租约授予响应
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	var leaseResp types.LeaseGrantResponse
 	if err := json.Unmarshal(dataBytes, &leaseResp); err != nil {
 		return 0, err
 	}
-	
+
 	return leaseResp.ID, nil
 }
 
@@ -1563,17 +1563,17 @@ func (c *Client) RevokeLease(leaseID int64) error {
 	req := types.LeaseRevokeRequest{
 		ID: leaseID,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/lease/revoke", req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to revoke lease: status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 
@@ -1582,33 +1582,33 @@ func (c *Client) KeepAliveLease(leaseID int64) (int64, error) {
 	req := types.LeaseKeepAliveRequest{
 		ID: leaseID,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/v1/lease/keepalive", req)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("failed to keep alive lease: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return 0, err
 	}
-	
+
 	// 解析租约保活响应
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	var keepAliveResp types.LeaseKeepAliveResponse
 	if err := json.Unmarshal(dataBytes, &keepAliveResp); err != nil {
 		return 0, err
 	}
-	
+
 	return keepAliveResp.TTL, nil
 }
 
@@ -1619,27 +1619,27 @@ func (c *Client) GetLease(leaseID int64) (*types.Lease, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get lease: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	
+
 	// 解析租约信息
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var lease types.Lease
 	if err := json.Unmarshal(dataBytes, &lease); err != nil {
 		return nil, err
 	}
-	
+
 	return &lease, nil
 }
 
@@ -1650,27 +1650,27 @@ func (c *Client) ListLeases() ([]*types.Lease, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list leases: status %d", resp.StatusCode)
 	}
-	
+
 	var result types.Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	
+
 	// 解析租约列表
 	dataBytes, err := json.Marshal(result.Data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var leases []*types.Lease
 	if err := json.Unmarshal(dataBytes, &leases); err != nil {
 		return nil, err
 	}
-	
+
 	return leases, nil
 }
 

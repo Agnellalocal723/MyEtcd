@@ -246,7 +246,7 @@ func evaluatePerformance(throughput float64, avgLatency time.Duration) string {
 // generateOptimizationSuggestions 生成优化建议
 func generateOptimizationSuggestions(results []*benchmark.BenchmarkResult, config *benchmark.BenchmarkConfig) {
 	fmt.Println("优化建议:")
-	
+
 	// 这里可以根据测试结果生成具体的优化建议
 	fmt.Println("  1. 考虑增加服务器资源以提高吞吐量")
 	fmt.Println("  2. 优化网络配置以减少延迟")

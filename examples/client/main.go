@@ -30,7 +30,7 @@ func main() {
 
 	// 基本操作演示
 	fmt.Println("\n=== Basic Operations ===")
-	
+
 	// PUT操作
 	fmt.Println("Putting key1=value1...")
 	if err := client.Put("key1", "value1", 0); err != nil {
@@ -67,7 +67,7 @@ func main() {
 
 	// 事务演示
 	fmt.Println("\n=== Transaction Demo ===")
-	
+
 	// 设置初始值
 	fmt.Println("Setting txn-key=initial...")
 	if err := client.Put("txn-key", "initial", 0); err != nil {
@@ -105,7 +105,7 @@ func main() {
 		log.Printf("Failed to execute transaction: %v", err)
 	} else {
 		fmt.Printf("✓ Transaction succeeded: %v\n", txnResp.Success)
-		
+
 		// 验证结果
 		resp, err := client.Get("txn-key")
 		if err != nil {
@@ -117,7 +117,7 @@ func main() {
 
 	// 复杂事务演示
 	fmt.Println("\n=== Complex Transaction Demo ===")
-	
+
 	// 准备多个键
 	client.Put("counter", "0", 0)
 	client.Put("name", "alice", 0)
@@ -163,7 +163,7 @@ func main() {
 		log.Printf("Failed to execute complex transaction: %v", err)
 	} else {
 		fmt.Printf("✓ Complex transaction succeeded: %v\n", complexResp.Success)
-		
+
 		// 显示所有键的当前状态
 		fmt.Println("Current key values:")
 		allKeys := []string{"counter", "name", "timestamp", "status"}
@@ -179,7 +179,7 @@ func main() {
 
 	// TTL演示
 	fmt.Println("\n=== TTL Demo ===")
-	
+
 	// 检查key2是否还存在
 	fmt.Println("Checking key2 (should still exist)...")
 	resp2, err := client.Get("key2")
@@ -204,7 +204,7 @@ func main() {
 
 	// 清理演示
 	fmt.Println("\n=== Cleanup Demo ===")
-	
+
 	// 列出所有键
 	keys, _ = client.ListKeys()
 	fmt.Printf("Keys before cleanup: %v\n", keys)

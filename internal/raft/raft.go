@@ -57,11 +57,11 @@ type Node struct {
 	mu sync.Mutex
 
 	// 通道
-	appendEntriesCh chan types.RaftMessage
-	requestVoteCh   chan types.RaftMessage
+	appendEntriesCh   chan types.RaftMessage
+	requestVoteCh     chan types.RaftMessage
 	installSnapshotCh chan types.RaftMessage
-	tickCh          chan struct{}
-	applyCh         chan types.LogEntry
+	tickCh            chan struct{}
+	applyCh           chan types.LogEntry
 
 	// 定时器
 	electionTimer  *time.Timer
@@ -73,7 +73,7 @@ type Node struct {
 
 	// 用于通知的通道
 	readyCh chan struct{}
-	
+
 	// 选举相关
 	votesReceived int // 收到的票数
 }
@@ -106,19 +106,19 @@ func NewNode(config *types.Config, transport Transport, stateMachine StateMachin
 			NextIndex:  make(map[string]uint64),
 			MatchIndex: make(map[string]uint64),
 		},
-		state:            types.Follower,
-		log:              make([]types.LogEntry, 0),
-		config:           config,
-		transport:        transport,
-		stateMachine:     stateMachine,
-		appendEntriesCh:  make(chan types.RaftMessage, 1000),
-		requestVoteCh:    make(chan types.RaftMessage, 1000),
+		state:             types.Follower,
+		log:               make([]types.LogEntry, 0),
+		config:            config,
+		transport:         transport,
+		stateMachine:      stateMachine,
+		appendEntriesCh:   make(chan types.RaftMessage, 1000),
+		requestVoteCh:     make(chan types.RaftMessage, 1000),
 		installSnapshotCh: make(chan types.RaftMessage, 1000),
-		tickCh:           make(chan struct{}, 1),
-		applyCh:          make(chan types.LogEntry, 1000),
-		commitIndex:      0,
-		lastApplied:      0,
-		readyCh:          make(chan struct{}, 1),
+		tickCh:            make(chan struct{}, 1),
+		applyCh:           make(chan types.LogEntry, 1000),
+		commitIndex:       0,
+		lastApplied:       0,
+		readyCh:           make(chan struct{}, 1),
 	}
 
 	// 初始化定时器
@@ -138,13 +138,13 @@ func NewNode(config *types.Config, transport Transport, stateMachine StateMachin
 // Start 启动Raft节点
 func (n *Node) Start() {
 	log.Printf("Starting Raft node %s as %s", n.config.NodeID, n.state.String())
-	
+
 	// 启动主循环
 	go n.run()
-	
+
 	// 启动应用日志的goroutine
 	go n.applyLoop()
-	
+
 	// 启动ticker goroutine来触发定时器
 	go n.ticker()
 }
@@ -161,13 +161,13 @@ func (n *Node) ticker() {
 			default:
 				// 已经有一个tick在处理中或通道已关闭
 			}
-			
+
 		case <-n.heartbeatTimer.C:
 			// 检查是否是领导者
 			n.mu.Lock()
 			isLeader := n.state == types.Leader
 			n.mu.Unlock()
-			
+
 			if isLeader {
 				// 使用非阻塞方式发送tick信号
 				select {
@@ -177,7 +177,7 @@ func (n *Node) ticker() {
 					// 已经有一个tick在处理中或通道已关闭
 				}
 			}
-			
+
 		case <-n.tickCh:
 			// 通道已关闭，退出循环
 			return
@@ -196,7 +196,7 @@ func (n *Node) run() {
 				return
 			}
 			n.tick()
-			
+
 		case msg, ok := <-n.appendEntriesCh:
 			// 处理AppendEntries RPC
 			if !ok {
@@ -204,7 +204,7 @@ func (n *Node) run() {
 				return
 			}
 			n.handleAppendEntries(msg)
-			
+
 		case msg, ok := <-n.requestVoteCh:
 			// 处理RequestVote RPC
 			if !ok {
@@ -212,7 +212,7 @@ func (n *Node) run() {
 				return
 			}
 			n.handleRequestVote(msg)
-			
+
 		case msg, ok := <-n.installSnapshotCh:
 			// 处理InstallSnapshot RPC
 			if !ok {
@@ -220,7 +220,7 @@ func (n *Node) run() {
 				return
 			}
 			n.handleInstallSnapshot(msg)
-			
+
 		case entry, ok := <-n.applyCh:
 			// 应用日志条目到状态机
 			if !ok {
@@ -242,12 +242,12 @@ func (n *Node) tick() {
 		// 跟随者如果在选举超时时间内没有收到领导者的心跳，就转为候选者
 		log.Printf("Follower %s election timeout, becoming candidate", n.config.NodeID)
 		n.becomeCandidate()
-		
+
 	case types.Candidate:
 		// 候选者如果选举超时，开始新一轮选举
 		log.Printf("Candidate %s election timeout, starting new election", n.config.NodeID)
 		n.startElection()
-		
+
 	case types.Leader:
 		// 领导者定期发送心跳
 		n.sendHeartbeats()
@@ -259,10 +259,10 @@ func (n *Node) becomeCandidate() {
 	n.state = types.Candidate
 	n.persistentState.CurrentTerm++
 	n.persistentState.VotedFor = n.config.NodeID
-	
+
 	// 重置选举定时器
 	n.resetElectionTimer()
-	
+
 	// 开始选举
 	n.startElection()
 }
@@ -270,19 +270,19 @@ func (n *Node) becomeCandidate() {
 // startElection 开始选举
 func (n *Node) startElection() {
 	log.Printf("Candidate %s starting election for term %d", n.config.NodeID, n.persistentState.CurrentTerm)
-	
+
 	// 获取最后一条日志的索引和任期
 	lastLogIndex, lastLogTerm := n.getLastLogInfo()
-	
+
 	// 重置投票计数
 	n.votesReceived = 1 // 自己的一票
-	
+
 	// 向所有其他节点发送请求投票RPC
 	for _, nodeID := range n.config.ClusterNodes {
 		if nodeID == n.config.NodeID {
 			continue
 		}
-		
+
 		msg := types.RaftMessage{
 			Type:         types.MsgRequestVote,
 			Term:         n.persistentState.CurrentTerm,
@@ -291,9 +291,9 @@ func (n *Node) startElection() {
 			LastLogIndex: lastLogIndex,
 			LastLogTerm:  lastLogTerm,
 		}
-		
+
 		log.Printf("Node %s sending RequestVote message to %s", n.config.NodeID, nodeID)
-		
+
 		go func(to string) {
 			if err := n.transport.Send(to, msg); err != nil {
 				log.Printf("Failed to send RequestVote to %s: %v", to, err)
@@ -302,7 +302,7 @@ func (n *Node) startElection() {
 			}
 		}(nodeID)
 	}
-	
+
 	// 不在这里立即检查票数，而是在处理响应时检查
 }
 
@@ -310,7 +310,7 @@ func (n *Node) startElection() {
 func (n *Node) becomeLeader() {
 	n.state = types.Leader
 	log.Printf("Node %s became leader for term %d", n.config.NodeID, n.persistentState.CurrentTerm)
-	
+
 	// 初始化领导者状态
 	for _, nodeID := range n.config.ClusterNodes {
 		if nodeID == n.config.NodeID {
@@ -319,10 +319,10 @@ func (n *Node) becomeLeader() {
 		n.leaderState.NextIndex[nodeID] = uint64(len(n.log))
 		n.leaderState.MatchIndex[nodeID] = 0
 	}
-	
+
 	// 启动心跳定时器
 	n.resetHeartbeatTimer()
-	
+
 	// 立即发送一次心跳（空的AppendEntries）
 	n.sendHeartbeats()
 }
@@ -333,21 +333,21 @@ func (n *Node) sendHeartbeats() {
 		if nodeID == n.config.NodeID {
 			continue
 		}
-		
+
 		nextIndex := n.leaderState.NextIndex[nodeID]
 		prevLogIndex := nextIndex - 1
 		prevLogTerm := uint64(0)
-		
+
 		if prevLogIndex > 0 && prevLogIndex < uint64(len(n.log)) {
 			prevLogTerm = n.log[prevLogIndex].Term
 		}
-		
+
 		// 准备要发送的日志条目
 		var entries []types.LogEntry
 		if nextIndex < uint64(len(n.log)) {
 			entries = n.log[nextIndex:]
 		}
-		
+
 		msg := types.RaftMessage{
 			Type:         types.MsgAppendEntries,
 			Term:         n.persistentState.CurrentTerm,
@@ -358,14 +358,14 @@ func (n *Node) sendHeartbeats() {
 			Entries:      entries,
 			LeaderCommit: n.commitIndex,
 		}
-		
+
 		go func(to string) {
 			if err := n.transport.Send(to, msg); err != nil {
 				log.Printf("Failed to send AppendEntries to %s: %v", to, err)
 			}
 		}(nodeID)
 	}
-	
+
 	// 重置心跳定时器
 	n.resetHeartbeatTimer()
 }
@@ -374,57 +374,57 @@ func (n *Node) sendHeartbeats() {
 func (n *Node) handleAppendEntries(msg types.RaftMessage) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 如果任期小于当前任期，拒绝
 	if msg.Term < n.persistentState.CurrentTerm {
 		n.sendAppendEntriesResponse(msg.From, false, n.commitIndex)
 		return
 	}
-	
+
 	// 如果任期大于当前任期，更新任期并转为跟随者
 	if msg.Term > n.persistentState.CurrentTerm {
 		n.persistentState.CurrentTerm = msg.Term
 		n.persistentState.VotedFor = ""
 		n.state = types.Follower
 	}
-	
+
 	// 重置选举定时器
 	n.resetElectionTimer()
-	
+
 	// 检查前一个日志条目是否匹配
 	if msg.PrevLogIndex > 0 {
-		if msg.PrevLogIndex >= uint64(len(n.log)) || 
-		   n.log[msg.PrevLogIndex].Term != msg.PrevLogTerm {
+		if msg.PrevLogIndex >= uint64(len(n.log)) ||
+			n.log[msg.PrevLogIndex].Term != msg.PrevLogTerm {
 			n.sendAppendEntriesResponse(msg.From, false, n.commitIndex)
 			return
 		}
 	}
-	
+
 	// 添加新的日志条目
 	if len(msg.Entries) > 0 {
 		// 检查是否有冲突
 		for i, entry := range msg.Entries {
 			index := msg.PrevLogIndex + 1 + uint64(i)
-			
+
 			if index < uint64(len(n.log)) && n.log[index].Term != entry.Term {
 				// 删除冲突的条目及其后的所有条目
 				n.log = n.log[:index]
 				break
 			}
 		}
-		
+
 		// 添加新条目
 		for _, entry := range msg.Entries {
 			n.log = append(n.log, entry)
 		}
 	}
-	
+
 	// 更新提交索引
 	if msg.LeaderCommit > n.commitIndex {
 		n.commitIndex = min(msg.LeaderCommit, uint64(len(n.log)-1))
 		n.notifyReady()
 	}
-	
+
 	// 发送成功响应
 	matchIndex := msg.PrevLogIndex + uint64(len(msg.Entries))
 	n.sendAppendEntriesResponse(msg.From, true, matchIndex)
@@ -437,7 +437,7 @@ func (n *Node) sendAppendEntriesResponse(to string, success bool, matchIndex uin
 		log.Printf("Warning: sendAppendEntriesResponse called with empty to parameter")
 		return
 	}
-	
+
 	msg := types.RaftMessage{
 		Type:       types.MsgAppendEntriesResponse,
 		Term:       n.persistentState.CurrentTerm,
@@ -446,9 +446,9 @@ func (n *Node) sendAppendEntriesResponse(to string, success bool, matchIndex uin
 		Success:    success,
 		MatchIndex: matchIndex,
 	}
-	
+
 	log.Printf("Node %s sending AppendEntriesResponse to %s", n.config.NodeID, to)
-	
+
 	go func() {
 		if err := n.transport.Send(to, msg); err != nil {
 			log.Printf("Failed to send AppendEntriesResponse to %s: %v", to, err)
@@ -460,35 +460,35 @@ func (n *Node) sendAppendEntriesResponse(to string, success bool, matchIndex uin
 func (n *Node) handleRequestVote(msg types.RaftMessage) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 如果任期小于当前任期，拒绝
 	if msg.Term < n.persistentState.CurrentTerm {
 		n.sendRequestVoteResponse(msg.From, false)
 		return
 	}
-	
+
 	// 如果任期大于当前任期，更新任期并转为跟随者
 	if msg.Term > n.persistentState.CurrentTerm {
 		n.persistentState.CurrentTerm = msg.Term
 		n.persistentState.VotedFor = ""
 		n.state = types.Follower
 	}
-	
+
 	// 检查是否已经投票
 	voteGranted := false
 	if n.persistentState.VotedFor == "" || n.persistentState.VotedFor == msg.From {
 		// 检查候选人的日志是否至少和自己一样新
 		lastLogIndex, lastLogTerm := n.getLastLogInfo()
-		if msg.LastLogTerm > lastLogTerm || 
-		   (msg.LastLogTerm == lastLogTerm && msg.LastLogIndex >= lastLogIndex) {
+		if msg.LastLogTerm > lastLogTerm ||
+			(msg.LastLogTerm == lastLogTerm && msg.LastLogIndex >= lastLogIndex) {
 			voteGranted = true
 			n.persistentState.VotedFor = msg.From
 		}
 	}
-	
+
 	// 重置选举定时器
 	n.resetElectionTimer()
-	
+
 	// 发送响应
 	n.sendRequestVoteResponse(msg.From, voteGranted)
 }
@@ -500,7 +500,7 @@ func (n *Node) sendRequestVoteResponse(to string, voteGranted bool) {
 		log.Printf("Warning: sendRequestVoteResponse called with empty to parameter")
 		return
 	}
-	
+
 	msg := types.RaftMessage{
 		Type:        types.MsgRequestVoteResponse,
 		Term:        n.persistentState.CurrentTerm,
@@ -508,9 +508,9 @@ func (n *Node) sendRequestVoteResponse(to string, voteGranted bool) {
 		To:          to,
 		VoteGranted: voteGranted,
 	}
-	
+
 	log.Printf("Node %s sending RequestVoteResponse to %s", n.config.NodeID, to)
-	
+
 	go func() {
 		if err := n.transport.Send(to, msg); err != nil {
 			log.Printf("Failed to send RequestVoteResponse to %s: %v", to, err)
@@ -522,37 +522,37 @@ func (n *Node) sendRequestVoteResponse(to string, voteGranted bool) {
 func (n *Node) handleInstallSnapshot(msg types.RaftMessage) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 如果任期小于当前任期，拒绝
 	if msg.Term < n.persistentState.CurrentTerm {
 		n.sendInstallSnapshotResponse(msg.From, false)
 		return
 	}
-	
+
 	// 如果任期大于当前任期，更新任期并转为跟随者
 	if msg.Term > n.persistentState.CurrentTerm {
 		n.persistentState.CurrentTerm = msg.Term
 		n.persistentState.VotedFor = ""
 		n.state = types.Follower
 	}
-	
+
 	// 重置选举定时器
 	n.resetElectionTimer()
-	
+
 	// 应用快照
 	if err := n.stateMachine.Restore(msg.SnapshotData); err != nil {
 		log.Printf("Failed to restore snapshot: %v", err)
 		n.sendInstallSnapshotResponse(msg.From, false)
 		return
 	}
-	
+
 	// 更新状态
 	n.commitIndex = msg.SnapshotIndex
 	n.lastApplied = msg.SnapshotIndex
-	
+
 	// 清空日志，只保留快照点之后的日志
 	n.log = n.log[:msg.SnapshotIndex+1]
-	
+
 	// 发送成功响应
 	n.sendInstallSnapshotResponse(msg.From, true)
 }
@@ -564,7 +564,7 @@ func (n *Node) sendInstallSnapshotResponse(to string, success bool) {
 		log.Printf("Warning: sendInstallSnapshotResponse called with empty to parameter")
 		return
 	}
-	
+
 	msg := types.RaftMessage{
 		Type:           types.MsgInstallSnapshotResponse,
 		Term:           n.persistentState.CurrentTerm,
@@ -572,9 +572,9 @@ func (n *Node) sendInstallSnapshotResponse(to string, success bool) {
 		To:             to,
 		InstallSuccess: success,
 	}
-	
+
 	log.Printf("Node %s sending InstallSnapshotResponse to %s", n.config.NodeID, to)
-	
+
 	go func() {
 		if err := n.transport.Send(to, msg); err != nil {
 			log.Printf("Failed to send InstallSnapshotResponse to %s: %v", to, err)
@@ -602,17 +602,17 @@ func (n *Node) applyLoop() {
 func (n *Node) applyEntry(entry types.LogEntry) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	if entry.Index <= n.lastApplied {
 		return
 	}
-	
+
 	// 跳过索引为0的空日志条目
 	if entry.Index == 0 {
 		n.lastApplied = entry.Index
 		return
 	}
-	
+
 	// 发送到应用通道，如果通道满则等待
 	n.applyCh <- entry
 	n.lastApplied = entry.Index
@@ -629,15 +629,15 @@ func (n *Node) notifyReady() {
 			if entry.Index == 0 {
 				continue
 			}
-			
+
 			log.Printf("Leader %s applying committed log entry: index=%d, term=%d, type=%s, key=%s",
 				n.config.NodeID, entry.Index, entry.Term, entry.Command.Type.String(), entry.Command.Key)
-			
+
 			// 发送到应用通道，如果通道满则等待
 			n.applyCh <- entry
 		}
 	}
-	
+
 	// 发送就绪信号
 	select {
 	case n.readyCh <- struct{}{}:
@@ -694,7 +694,7 @@ func min(a, b uint64) uint64 {
 func (n *Node) ProcessMessage(msg types.RaftMessage) {
 	// 检查节点是否已经停止
 	n.mu.Lock()
-	
+
 	// 检查节点是否已经停止（通过检查tickCh是否已关闭）
 	select {
 	case <-n.tickCh:
@@ -703,7 +703,7 @@ func (n *Node) ProcessMessage(msg types.RaftMessage) {
 		return
 	default:
 	}
-	
+
 	// 处理消息
 	switch msg.Type {
 	case types.MsgAppendEntries:
@@ -713,11 +713,11 @@ func (n *Node) ProcessMessage(msg types.RaftMessage) {
 			log.Printf("AppendEntries channel is full or closed, dropping message")
 		}
 		n.mu.Unlock()
-		
+
 	case types.MsgAppendEntriesResponse:
 		n.mu.Unlock()
 		n.handleAppendEntriesResponse(msg)
-		
+
 	case types.MsgRequestVote:
 		select {
 		case n.requestVoteCh <- msg:
@@ -725,11 +725,11 @@ func (n *Node) ProcessMessage(msg types.RaftMessage) {
 			log.Printf("RequestVote channel is full or closed, dropping message")
 		}
 		n.mu.Unlock()
-		
+
 	case types.MsgRequestVoteResponse:
 		n.mu.Unlock()
 		n.handleRequestVoteResponse(msg)
-		
+
 	case types.MsgInstallSnapshot:
 		select {
 		case n.installSnapshotCh <- msg:
@@ -737,11 +737,11 @@ func (n *Node) ProcessMessage(msg types.RaftMessage) {
 			log.Printf("InstallSnapshot channel is full or closed, dropping message")
 		}
 		n.mu.Unlock()
-		
+
 	case types.MsgInstallSnapshotResponse:
 		n.mu.Unlock()
 		// 暂时不处理
-		
+
 	default:
 		n.mu.Unlock()
 		log.Printf("Unknown message type: %d", msg.Type)
@@ -752,19 +752,19 @@ func (n *Node) ProcessMessage(msg types.RaftMessage) {
 func (n *Node) handleAppendEntriesResponse(msg types.RaftMessage) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 检查msg.From是否为空
 	if msg.From == "" {
 		log.Printf("Warning: received AppendEntriesResponse with empty From field")
 		return
 	}
-	
+
 	if n.state != types.Leader || msg.Term < n.persistentState.CurrentTerm {
 		log.Printf("Node %s ignoring AppendEntriesResponse from %s: not leader or term mismatch",
 			n.config.NodeID, msg.From)
 		return
 	}
-	
+
 	if msg.Term > n.persistentState.CurrentTerm {
 		n.persistentState.CurrentTerm = msg.Term
 		n.state = types.Follower
@@ -772,19 +772,19 @@ func (n *Node) handleAppendEntriesResponse(msg types.RaftMessage) {
 			n.config.NodeID, msg.Term, msg.From)
 		return
 	}
-	
+
 	if msg.Success {
 		// 成功，更新匹配索引和下一个索引
 		oldMatchIndex := n.leaderState.MatchIndex[msg.From]
 		n.leaderState.MatchIndex[msg.From] = msg.MatchIndex
 		n.leaderState.NextIndex[msg.From] = msg.MatchIndex + 1
-		
+
 		log.Printf("Node %s: AppendEntries to %s succeeded, matchIndex updated from %d to %d",
 			n.config.NodeID, msg.From, oldMatchIndex, msg.MatchIndex)
-		
+
 		// 检查是否可以提交新的日志条目
 		n.checkCommitIndex()
-		
+
 		// 如果日志条目已提交，立即发送心跳通知跟随者
 		if n.commitIndex > 0 {
 			n.sendHeartbeats()
@@ -795,24 +795,24 @@ func (n *Node) handleAppendEntriesResponse(msg types.RaftMessage) {
 		if n.leaderState.NextIndex[msg.From] > 1 {
 			n.leaderState.NextIndex[msg.From]--
 		}
-		
+
 		log.Printf("Node %s: AppendEntries to %s failed, nextIndex decreased from %d to %d",
 			n.config.NodeID, msg.From, oldNextIndex, n.leaderState.NextIndex[msg.From])
-		
+
 		// 重新发送日志条目
 		nextIndex := n.leaderState.NextIndex[msg.From]
 		prevLogIndex := nextIndex - 1
 		prevLogTerm := uint64(0)
-		
+
 		if prevLogIndex > 0 && prevLogIndex < uint64(len(n.log)) {
 			prevLogTerm = n.log[prevLogIndex].Term
 		}
-		
+
 		var entries []types.LogEntry
 		if nextIndex < uint64(len(n.log)) {
 			entries = n.log[nextIndex:]
 		}
-		
+
 		responseMsg := types.RaftMessage{
 			Type:         types.MsgAppendEntries,
 			Term:         n.persistentState.CurrentTerm,
@@ -823,10 +823,10 @@ func (n *Node) handleAppendEntriesResponse(msg types.RaftMessage) {
 			Entries:      entries,
 			LeaderCommit: n.commitIndex,
 		}
-		
+
 		log.Printf("Node %s resending AppendEntries to %s: nextIndex=%d, prevLogIndex=%d, entries=%d",
 			n.config.NodeID, msg.From, nextIndex, prevLogIndex, len(entries))
-		
+
 		go func() {
 			if err := n.transport.Send(msg.From, responseMsg); err != nil {
 				log.Printf("Failed to send AppendEntries to %s: %v", msg.From, err)
@@ -839,28 +839,28 @@ func (n *Node) handleAppendEntriesResponse(msg types.RaftMessage) {
 func (n *Node) handleRequestVoteResponse(msg types.RaftMessage) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 检查msg.From是否为空
 	if msg.From == "" {
 		log.Printf("Warning: received RequestVoteResponse with empty From field")
 		return
 	}
-	
+
 	if n.state != types.Candidate || msg.Term < n.persistentState.CurrentTerm {
 		return
 	}
-	
+
 	if msg.Term > n.persistentState.CurrentTerm {
 		n.persistentState.CurrentTerm = msg.Term
 		n.state = types.Follower
 		return
 	}
-	
+
 	if msg.VoteGranted {
 		// 获得一票，增加投票计数
 		n.votesReceived++
 		log.Printf("Candidate %s received vote from %s, total votes: %d", n.config.NodeID, msg.From, n.votesReceived)
-		
+
 		// 检查是否获得了足够的票数
 		neededVotes := len(n.config.ClusterNodes)/2 + 1
 		if n.votesReceived >= neededVotes {
@@ -873,20 +873,20 @@ func (n *Node) handleRequestVoteResponse(msg types.RaftMessage) {
 func (n *Node) checkCommitIndex() {
 	// 找到可以被大多数节点复制的最高索引
 	maxCommitIndex := n.commitIndex
-	
+
 	for i := n.commitIndex + 1; i < uint64(len(n.log)); i++ {
 		count := 1 // 领导者自己
-		
+
 		for _, nodeID := range n.config.ClusterNodes {
 			if nodeID == n.config.NodeID {
 				continue
 			}
-			
+
 			if n.leaderState.MatchIndex[nodeID] >= i {
 				count++
 			}
 		}
-		
+
 		// 如果大多数节点已经复制了这个条目
 		if count > len(n.config.ClusterNodes)/2 {
 			// 提交日志条目
@@ -895,7 +895,7 @@ func (n *Node) checkCommitIndex() {
 			maxCommitIndex = i
 		}
 	}
-	
+
 	// 批量更新提交索引
 	if maxCommitIndex > n.commitIndex {
 		n.commitIndex = maxCommitIndex
@@ -909,27 +909,27 @@ func (n *Node) checkCommitIndex() {
 func (n *Node) Propose(command types.Command) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	if n.state != types.Leader {
 		return fmt.Errorf("not leader, current state: %s", n.state.String())
 	}
-	
+
 	// 创建新的日志条目
 	entry := types.LogEntry{
 		Term:    n.persistentState.CurrentTerm,
 		Index:   uint64(len(n.log)),
 		Command: command,
 	}
-	
+
 	log.Printf("Leader %s proposing new log entry: index=%d, term=%d, type=%s, key=%s",
 		n.config.NodeID, entry.Index, entry.Term, entry.Command.Type.String(), entry.Command.Key)
-	
+
 	// 添加到本地日志
 	n.log = append(n.log, entry)
-	
+
 	// 立即发送给所有跟随者
 	n.sendLogEntries()
-	
+
 	return nil
 }
 
@@ -939,21 +939,21 @@ func (n *Node) sendLogEntries() {
 		if nodeID == n.config.NodeID {
 			continue
 		}
-		
+
 		nextIndex := n.leaderState.NextIndex[nodeID]
 		prevLogIndex := nextIndex - 1
 		prevLogTerm := uint64(0)
-		
+
 		if prevLogIndex > 0 && prevLogIndex < uint64(len(n.log)) {
 			prevLogTerm = n.log[prevLogIndex].Term
 		}
-		
+
 		// 准备要发送的日志条目
 		var entries []types.LogEntry
 		if nextIndex < uint64(len(n.log)) {
 			entries = n.log[nextIndex:]
 		}
-		
+
 		msg := types.RaftMessage{
 			Type:         types.MsgAppendEntries,
 			Term:         n.persistentState.CurrentTerm,
@@ -964,10 +964,10 @@ func (n *Node) sendLogEntries() {
 			Entries:      entries,
 			LeaderCommit: n.commitIndex,
 		}
-		
+
 		log.Printf("Node %s sending AppendEntries to %s: nextIndex=%d, prevLogIndex=%d, prevLogTerm=%d, entries=%d, commitIndex=%d",
 			n.config.NodeID, nodeID, nextIndex, prevLogIndex, prevLogTerm, len(entries), n.commitIndex)
-		
+
 		go func(to string) {
 			if err := n.transport.Send(to, msg); err != nil {
 				log.Printf("Failed to send AppendEntries to %s: %v", to, err)
@@ -994,14 +994,14 @@ func (n *Node) GetLeader() string {
 // Stop 停止Raft节点
 func (n *Node) Stop() {
 	log.Printf("Stopping Raft node %s", n.config.NodeID)
-	
+
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	
+
 	// 停止定时器
 	n.electionTimer.Stop()
 	n.heartbeatTimer.Stop()
-	
+
 	// 关闭所有通道
 	// 注意：先关闭tickCh以停止ticker goroutine
 	close(n.tickCh)
@@ -1010,6 +1010,6 @@ func (n *Node) Stop() {
 	close(n.installSnapshotCh)
 	close(n.applyCh)
 	close(n.readyCh)
-	
+
 	log.Printf("Stopped Raft node %s", n.config.NodeID)
 }

@@ -29,33 +29,33 @@ var (
 // Metrics 指标结构体
 type Metrics struct {
 	// HTTP指标
-	httpRequestsTotal *prometheus.CounterVec
+	httpRequestsTotal   *prometheus.CounterVec
 	httpRequestDuration *prometheus.HistogramVec
 
 	// 存储指标
-	storageOperationsTotal *prometheus.CounterVec
+	storageOperationsTotal   *prometheus.CounterVec
 	storageOperationDuration *prometheus.HistogramVec
-	storageKeysTotal prometheus.Gauge
-	storageSizeBytes prometheus.Gauge
+	storageKeysTotal         prometheus.Gauge
+	storageSizeBytes         prometheus.Gauge
 
 	// Raft指标
-	raftMessagesTotal *prometheus.CounterVec
+	raftMessagesTotal   *prometheus.CounterVec
 	raftMessageDuration *prometheus.HistogramVec
 	raftLogEntriesTotal prometheus.Gauge
-	raftLogIndex prometheus.Gauge
-	raftTerm prometheus.Gauge
-	raftState prometheus.Gauge
+	raftLogIndex        prometheus.Gauge
+	raftTerm            prometheus.Gauge
+	raftState           prometheus.Gauge
 
 	// Watch指标
-	watchersTotal prometheus.Gauge
+	watchersTotal    prometheus.Gauge
 	watchEventsTotal *prometheus.CounterVec
 
 	// 租约指标
-	leasesTotal prometheus.Gauge
+	leasesTotal           prometheus.Gauge
 	leaseExpirationsTotal *prometheus.CounterVec
 
 	// 系统指标
-	goRoutines prometheus.Gauge
+	goRoutines      prometheus.Gauge
 	gcPauseDuration *prometheus.HistogramVec
 }
 

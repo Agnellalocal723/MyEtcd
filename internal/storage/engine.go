@@ -14,12 +14,12 @@ import (
 )
 
 var (
-	ErrKeyNotFound    = fmt.Errorf("key not found")
-	ErrKeyExpired     = fmt.Errorf("key expired")
-	ErrTxnNotFound    = fmt.Errorf("transaction not found")
-	ErrTxnAborted     = fmt.Errorf("transaction aborted")
-	ErrCASFailed      = fmt.Errorf("compare-and-swap failed")
-	ErrInvalidTxn     = fmt.Errorf("invalid transaction")
+	ErrKeyNotFound = fmt.Errorf("key not found")
+	ErrKeyExpired  = fmt.Errorf("key expired")
+	ErrTxnNotFound = fmt.Errorf("transaction not found")
+	ErrTxnAborted  = fmt.Errorf("transaction aborted")
+	ErrCASFailed   = fmt.Errorf("compare-and-swap failed")
+	ErrInvalidTxn  = fmt.Errorf("invalid transaction")
 )
 
 /*
@@ -61,16 +61,16 @@ ACID是数据库事务的四个核心特性，确保数据的一致性和可靠�
 // - 隔离性：通过读写锁和版本控制
 // - 持久性：通过WAL和定期快照
 type Engine struct {
-	mu          sync.RWMutex                    // 读写锁，保证并发安全
-	data        map[string]*types.KeyValue     // 内存中的键值存储
-	transactions map[string]*types.Transaction // 活跃事务管理
-	config      *types.Config                  // 配置信息
-	wal         WALWrapper                     // WAL接口，用于持久化
-	snapshotIndex uint64                       // 当前快照索引
-	watcher     *watch.Watcher                 // Watch管理器
-	leaseManager *lease.LeaseManager           // 租约管理器
-	closed      bool                           // 引擎是否已关闭
-	closeChan   chan struct{}                  // 用于通知后台goroutine退出
+	mu            sync.RWMutex                  // 读写锁，保证并发安全
+	data          map[string]*types.KeyValue    // 内存中的键值存储
+	transactions  map[string]*types.Transaction // 活跃事务管理
+	config        *types.Config                 // 配置信息
+	wal           WALWrapper                    // WAL接口，用于持久化
+	snapshotIndex uint64                        // 当前快照索引
+	watcher       *watch.Watcher                // Watch管理器
+	leaseManager  *lease.LeaseManager           // 租约管理器
+	closed        bool                          // 引擎是否已关闭
+	closeChan     chan struct{}                 // 用于通知后台goroutine退出
 }
 
 // WALWrapper WAL包装器
@@ -88,13 +88,13 @@ type WALWrapper interface {
 // NewEngine 创建新的存储引擎
 func NewEngine(config *types.Config, wal WALWrapper) (*Engine, error) {
 	engine := &Engine{
-		data:        make(map[string]*types.KeyValue),
+		data:         make(map[string]*types.KeyValue),
 		transactions: make(map[string]*types.Transaction),
-		config:      config,
-		wal:         wal,
-		watcher:     watch.NewWatcher(),
+		config:       config,
+		wal:          wal,
+		watcher:      watch.NewWatcher(),
 		leaseManager: lease.NewLeaseManager(),
-		closeChan:   make(chan struct{}),
+		closeChan:    make(chan struct{}),
 	}
 
 	// 确保数据目录存在
@@ -110,7 +110,7 @@ func NewEngine(config *types.Config, wal WALWrapper) (*Engine, error) {
 	// 启动后台清理任务
 	go engine.cleanupExpiredKeys()
 	go engine.snapshotRoutine()
-	
+
 	// 启动Watcher
 	engine.watcher.Start()
 
@@ -156,7 +156,7 @@ func (e *Engine) applyCommand(cmd *types.Command) error {
 // applyPut 应用PUT操作
 func (e *Engine) applyPut(key string, value []byte) error {
 	now := time.Now()
-	
+
 	if existing, exists := e.data[key]; exists {
 		// 更新现有键值
 		existing.Value = value
@@ -172,7 +172,7 @@ func (e *Engine) applyPut(key string, value []byte) error {
 			Version:  1,
 		}
 	}
-	
+
 	return nil
 }
 
@@ -187,20 +187,20 @@ func (e *Engine) applyDelete(key string) error {
 // 这个方法完美展示了WAL机制和ACID特性的实现：
 //
 // 1. 持久性 (Durability)：
-//    - 首先将操作写入WAL，确保即使系统崩溃也能恢复
-//    - 调用Sync()确保数据真正写入磁盘
+//   - 首先将操作写入WAL，确保即使系统崩溃也能恢复
+//   - 调用Sync()确保数据真正写入磁盘
 //
 // 2. 原子性 (Atomicity)：
-//    - 要么WAL写入成功且内存更新成功，要么都失败
-//    - 如果WAL写入失败，不会修改内存数据
+//   - 要么WAL写入成功且内存更新成功，要么都失败
+//   - 如果WAL写入失败，不会修改内存数据
 //
 // 3. 隔离性 (Isolation)：
-//    - 使用写锁确保同一时间只有一个写操作
-//    - 防止并发写操作导致数据不一致
+//   - 使用写锁确保同一时间只有一个写操作
+//   - 防止并发写操作导致数据不一致
 //
 // 4. 一致性 (Consistency)：
-//    - 验证输入参数
-//    - 维护数据的完整性约束
+//   - 验证输入参数
+//   - 维护数据的完整性约束
 func (e *Engine) Put(key string, value []byte, ttl int64) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -246,15 +246,15 @@ func (e *Engine) Put(key string, value []byte, ttl int64) error {
 
 	var prevValue []byte
 	var newVersion int64
-	
+
 	if existing, exists := e.data[key]; exists {
 		// 保存之前的值用于Watch通知
 		prevValue = append([]byte(nil), existing.Value...)
-		
+
 		// 更新现有键值
 		existing.Value = value
 		existing.Modified = now
-		existing.Version++  // 版本号递增，用于乐观锁
+		existing.Version++ // 版本号递增，用于乐观锁
 		existing.TTL = ttl
 		existing.Expires = expires
 		newVersion = existing.Version
@@ -265,13 +265,13 @@ func (e *Engine) Put(key string, value []byte, ttl int64) error {
 			Value:    value,
 			Created:  now,
 			Modified: now,
-			Version:  1,  // 新键值从版本1开始
+			Version:  1, // 新键值从版本1开始
 			TTL:      ttl,
 			Expires:  expires,
 		}
 		newVersion = 1
 	}
-	
+
 	// 如果键关联了租约，附加到租约
 	if ttl > 0 {
 		// 创建新租约
@@ -279,14 +279,14 @@ func (e *Engine) Put(key string, value []byte, ttl int64) error {
 		if err != nil {
 			return fmt.Errorf("failed to create lease: %w", err)
 		}
-		
+
 		// 附加键到租约
 		if err := e.leaseManager.Attach(leaseID, key); err != nil {
 			// 如果附加失败，撤销租约
 			e.leaseManager.Revoke(leaseID)
 			return fmt.Errorf("failed to attach key to lease: %w", err)
 		}
-		
+
 		// 更新KeyValue的租约ID
 		if existing, exists := e.data[key]; exists {
 			existing.LeaseID = leaseID
@@ -297,7 +297,7 @@ func (e *Engine) Put(key string, value []byte, ttl int64) error {
 			}
 		}
 	}
-	
+
 	// 通知Watcher
 	e.watcher.Notify(types.WatchPut, key, value, prevValue, newVersion)
 
@@ -381,15 +381,15 @@ func (e *Engine) Delete(key string) error {
 	if existing, exists := e.data[key]; exists {
 		prevValue = append([]byte(nil), existing.Value...)
 	}
-	
+
 	// 从内存存储中删除
 	delete(e.data, key)
-	
+
 	// 如果键关联了租约，从租约分离
 	if existing, exists := e.data[key]; exists && existing.LeaseID > 0 {
 		e.leaseManager.Detach(key)
 	}
-	
+
 	// 通知Watcher
 	e.watcher.Notify(types.WatchDelete, key, nil, prevValue, 0)
 
@@ -463,7 +463,7 @@ func (e *Engine) putUnsafe(key string, value []byte, ttl int64) error {
 		existing.Version++
 		existing.TTL = ttl
 		existing.Expires = expires
-		
+
 		// 通知Watcher
 		e.watcher.Notify(types.WatchPut, key, value, nil, existing.Version)
 	} else {
@@ -476,7 +476,7 @@ func (e *Engine) putUnsafe(key string, value []byte, ttl int64) error {
 			TTL:      ttl,
 			Expires:  expires,
 		}
-		
+
 		// 通知Watcher
 		e.watcher.Notify(types.WatchPut, key, value, nil, 1)
 	}
@@ -503,10 +503,10 @@ func (e *Engine) BeginTransaction() (*types.Transaction, error) {
 
 	// 创建新事务
 	txn := &types.Transaction{
-		ID:        generateTxnID(),           // 生成唯一的事务ID
-		Operations: []types.Operation{},      // 初始化操作列表
-		Timestamp: time.Now(),                // 记录事务开始时间
-		Status:    types.TxnPending,          // 设置为待执行状态
+		ID:         generateTxnID(),     // 生成唯一的事务ID
+		Operations: []types.Operation{}, // 初始化操作列表
+		Timestamp:  time.Now(),          // 记录事务开始时间
+		Status:     types.TxnPending,    // 设置为待执行状态
 	}
 
 	// 将事务注册到引擎中
@@ -654,13 +654,13 @@ func (e *Engine) Size() int {
 func (e *Engine) Watch(key string, prefix, prevKV bool) (int64, <-chan types.WatchEvent, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	if e.closed {
 		return 0, nil, fmt.Errorf("engine is closed")
 	}
-	
+
 	watchID, eventChan := e.watcher.Watch(key, prefix, prevKV)
-	
+
 	// 转换事件通道
 	resultChan := make(chan types.WatchEvent, 100)
 	go func() {
@@ -669,7 +669,7 @@ func (e *Engine) Watch(key string, prefix, prevKV bool) (int64, <-chan types.Wat
 		}
 		close(resultChan)
 	}()
-	
+
 	return watchID, resultChan, nil
 }
 
@@ -677,11 +677,11 @@ func (e *Engine) Watch(key string, prefix, prevKV bool) (int64, <-chan types.Wat
 func (e *Engine) CancelWatch(watchID int64) error {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	if e.closed {
 		return fmt.Errorf("engine is closed")
 	}
-	
+
 	return e.watcher.Cancel(watchID)
 }
 
@@ -689,11 +689,11 @@ func (e *Engine) CancelWatch(watchID int64) error {
 func (e *Engine) GetWatchCount() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	if e.closed {
 		return 0
 	}
-	
+
 	return e.watcher.GetWatchCount()
 }
 
@@ -701,14 +701,14 @@ func (e *Engine) GetWatchCount() int {
 func (e *Engine) Range(key, rangeEnd string, limit int64) ([]*types.KeyValue, int64, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	if e.closed {
 		return nil, 0, fmt.Errorf("engine is closed")
 	}
-	
+
 	var result []*types.KeyValue
 	var count int64
-	
+
 	// 确定范围
 	if rangeEnd == "" {
 		// 单个键
@@ -722,12 +722,12 @@ func (e *Engine) Range(key, rangeEnd string, limit int64) ([]*types.KeyValue, in
 			if kv.IsExpired() {
 				continue
 			}
-			
+
 			// 检查是否在范围内
 			if k >= key && (rangeEnd == "" || k < rangeEnd) {
 				result = append(result, e.copyKeyValue(kv))
 				count++
-				
+
 				// 检查限制
 				if limit > 0 && int64(len(result)) >= limit {
 					break
@@ -735,7 +735,7 @@ func (e *Engine) Range(key, rangeEnd string, limit int64) ([]*types.KeyValue, in
 			}
 		}
 	}
-	
+
 	return result, count, nil
 }
 
@@ -757,17 +757,17 @@ func (e *Engine) copyKeyValue(kv *types.KeyValue) *types.KeyValue {
 func (e *Engine) BatchPut(kvs map[string][]byte, ttl int64) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	if e.closed {
 		return fmt.Errorf("engine is closed")
 	}
-	
+
 	now := time.Now()
 	var expires time.Time
 	if ttl > 0 {
 		expires = now.Add(time.Duration(ttl) * time.Second)
 	}
-	
+
 	// 为每个键值创建命令和记录
 	for key, value := range kvs {
 		// 创建命令
@@ -777,30 +777,30 @@ func (e *Engine) BatchPut(kvs map[string][]byte, ttl int64) error {
 			Value: value,
 			Time:  now,
 		}
-		
+
 		// 写入WAL
 		record := &types.WALRecord{
 			Command: *cmd,
 		}
-		
+
 		if err := e.wal.Append(record); err != nil {
 			return fmt.Errorf("failed to append to WAL for key %s: %w", key, err)
 		}
 	}
-	
+
 	// 同步WAL
 	if err := e.wal.Sync(); err != nil {
 		return fmt.Errorf("failed to sync WAL: %w", err)
 	}
-	
+
 	// 应用到内存存储
 	for key, value := range kvs {
 		var prevValue []byte
 		var newVersion int64
-		
+
 		if existing, exists := e.data[key]; exists {
 			prevValue = append([]byte(nil), existing.Value...)
-			
+
 			existing.Value = value
 			existing.Modified = now
 			existing.Version++
@@ -819,11 +819,11 @@ func (e *Engine) BatchPut(kvs map[string][]byte, ttl int64) error {
 			}
 			newVersion = 1
 		}
-		
+
 		// 通知Watcher
 		e.watcher.Notify(types.WatchPut, key, value, prevValue, newVersion)
 	}
-	
+
 	return nil
 }
 
@@ -831,53 +831,53 @@ func (e *Engine) BatchPut(kvs map[string][]byte, ttl int64) error {
 func (e *Engine) BatchDelete(keys []string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	if e.closed {
 		return fmt.Errorf("engine is closed")
 	}
-	
+
 	now := time.Now()
-	
+
 	// 为每个键创建命令和记录
 	for _, key := range keys {
 		if _, exists := e.data[key]; !exists {
 			continue // 跳过不存在的键
 		}
-		
+
 		// 创建命令
 		cmd := &types.Command{
 			Type: types.CommandDelete,
 			Key:  key,
 			Time: now,
 		}
-		
+
 		// 写入WAL
 		record := &types.WALRecord{
 			Command: *cmd,
 		}
-		
+
 		if err := e.wal.Append(record); err != nil {
 			return fmt.Errorf("failed to append to WAL for key %s: %w", key, err)
 		}
 	}
-	
+
 	// 同步WAL
 	if err := e.wal.Sync(); err != nil {
 		return fmt.Errorf("failed to sync WAL: %w", err)
 	}
-	
+
 	// 应用到内存存储
 	for _, key := range keys {
 		if existing, exists := e.data[key]; exists {
 			prevValue := append([]byte(nil), existing.Value...)
-			
+
 			delete(e.data, key)
-			
+
 			// 通知Watcher
 			e.watcher.Notify(types.WatchDelete, key, nil, prevValue, 0)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -885,7 +885,7 @@ func (e *Engine) BatchDelete(keys []string) error {
 func (e *Engine) leaseCleanupRoutine() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -896,7 +896,7 @@ func (e *Engine) leaseCleanupRoutine() {
 					if kv, exists := e.data[key]; exists {
 						prevValue := append([]byte(nil), kv.Value...)
 						delete(e.data, key)
-						
+
 						// 通知Watcher
 						e.watcher.Notify(types.WatchDelete, key, nil, prevValue, 0)
 					}
@@ -914,7 +914,7 @@ func (e *Engine) GrantLease(ttl int64) (int64, error) {
 	if ttl <= 0 {
 		return 0, fmt.Errorf("TTL must be positive")
 	}
-	
+
 	return e.leaseManager.Grant(ttl)
 }
 
@@ -925,20 +925,20 @@ func (e *Engine) RevokeLease(leaseID int64) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// 删除所有关联的键
 	e.mu.Lock()
 	for _, key := range lease.Keys {
 		if kv, exists := e.data[key]; exists && kv.LeaseID == leaseID {
 			prevValue := append([]byte(nil), kv.Value...)
 			delete(e.data, key)
-			
+
 			// 通知Watcher
 			e.watcher.Notify(types.WatchDelete, key, nil, prevValue, 0)
 		}
 	}
 	e.mu.Unlock()
-	
+
 	// 撤销租约
 	return e.leaseManager.Revoke(leaseID)
 }
@@ -954,28 +954,28 @@ func (e *Engine) AttachToLease(leaseID int64, key string) error {
 	e.mu.RLock()
 	kv, exists := e.data[key]
 	e.mu.RUnlock()
-	
+
 	if !exists {
 		return fmt.Errorf("key %s not found", key)
 	}
-	
+
 	// 如果键已经关联了租约，先分离
 	if kv.LeaseID > 0 {
 		e.leaseManager.Detach(key)
 	}
-	
+
 	// 附加到新租约
 	if err := e.leaseManager.Attach(leaseID, key); err != nil {
 		return err
 	}
-	
+
 	// 更新KeyValue的租约ID
 	e.mu.Lock()
 	if kv, exists := e.data[key]; exists {
 		kv.LeaseID = leaseID
 	}
 	e.mu.Unlock()
-	
+
 	return nil
 }
 
@@ -985,17 +985,17 @@ func (e *Engine) DetachFromLease(key string) error {
 	e.mu.RLock()
 	kv, exists := e.data[key]
 	e.mu.RUnlock()
-	
+
 	if !exists {
 		return fmt.Errorf("key %s not found", key)
 	}
-	
+
 	// 从租约分离
 	if kv.LeaseID > 0 {
 		if err := e.leaseManager.Detach(key); err != nil {
 			return err
 		}
-		
+
 		// 清除KeyValue的租约ID
 		e.mu.Lock()
 		if kv, exists := e.data[key]; exists {
@@ -1005,7 +1005,7 @@ func (e *Engine) DetachFromLease(key string) error {
 		}
 		e.mu.Unlock()
 	}
-	
+
 	return nil
 }
 
@@ -1189,12 +1189,12 @@ func (e *Engine) Close() error {
 	if e.watcher != nil {
 		e.watcher.Stop()
 	}
-	
+
 	// 关闭租约管理器
 	if e.leaseManager != nil {
 		e.leaseManager.Close()
 	}
-	
+
 	// 关闭WAL
 	if e.wal != nil {
 		if err := e.wal.Close(); err != nil {

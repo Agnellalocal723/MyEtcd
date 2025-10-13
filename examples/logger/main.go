@@ -76,7 +76,7 @@ func basicLoggingExample() {
 	logger.Info("这是一条信息")
 	logger.Warn("这是一条警告")
 	logger.Error("这是一条错误")
-	
+
 	// 注意：Fatal会终止程序，所以在这里不演示
 	// logger.Fatal("这是一条致命错误")
 }

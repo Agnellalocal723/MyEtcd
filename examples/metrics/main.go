@@ -80,19 +80,19 @@ func main() {
 			case <-ticker.C:
 				key := fmt.Sprintf("test-key-%d", counter%10)
 				value := fmt.Sprintf("test-value-%d", counter)
-				
+
 				// 执行PUT操作
 				if err := client.Put(key, value, 10); err != nil {
 					log.Printf("Failed to put key: %v", err)
 				} else {
 					log.Printf("Put key: %s", key)
 				}
-				
+
 				// 执行GET操作
 				if _, err := client.Get(key); err != nil {
 					log.Printf("Failed to get key: %v", err)
 				}
-				
+
 				counter++
 			}
 		}

@@ -92,21 +92,21 @@ func main() {
 	// 演示配置合并
 	fmt.Println("\n=== Demonstrating Config Merge ===")
 	baseConfig := &types.Config{
-		DataDir:     "./base-data",
-		NodeID:      "base-node",
+		DataDir:      "./base-data",
+		NodeID:       "base-node",
 		ClusterNodes: []string{"node1"},
 	}
 
 	overrideConfig := &types.Config{
-		NodeID:      "override-node",
+		NodeID:       "override-node",
 		ClusterNodes: []string{"node1", "node2"},
-		WALDir:      "./override-wal",
+		WALDir:       "./override-wal",
 	}
 
 	mergedConfig := config.MergeConfigs(baseConfig, overrideConfig)
 	fmt.Printf("Base config: NodeID = %s, DataDir = %s\n", baseConfig.NodeID, baseConfig.DataDir)
 	fmt.Printf("Override config: NodeID = %s, WALDir = %s\n", overrideConfig.NodeID, overrideConfig.WALDir)
-	fmt.Printf("Merged config: NodeID = %s, DataDir = %s, WALDir = %s\n", 
+	fmt.Printf("Merged config: NodeID = %s, DataDir = %s, WALDir = %s\n",
 		mergedConfig.NodeID, mergedConfig.DataDir, mergedConfig.WALDir)
 
 	// 恢复原始配置

@@ -22,7 +22,7 @@ func main() {
 
 	// Watch演示
 	fmt.Println("\n=== Watch Demo ===")
-	
+
 	// 1. 单个键的Watch
 	fmt.Println("Creating watch for key 'watch-key'...")
 	watchID, eventChan, err := client.Watch("watch-key", false, true)
@@ -81,7 +81,7 @@ func main() {
 
 	// 2. 前缀Watch演示
 	fmt.Println("\n=== Prefix Watch Demo ===")
-	
+
 	fmt.Println("Creating prefix watch for 'demo-'...")
 	prefixWatchID, prefixEventChan, err := client.Watch("demo-", true, false)
 	if err != nil {
@@ -131,7 +131,7 @@ func main() {
 
 	// 3. 范围查询演示
 	fmt.Println("\n=== Range Query Demo ===")
-	
+
 	// 准备一些测试数据
 	fmt.Println("Preparing test data for range query...")
 	rangeKeys := []string{"a", "b", "c", "d", "e", "f"}
@@ -180,7 +180,7 @@ func main() {
 
 	// 4. 批量操作演示
 	fmt.Println("\n=== Batch Operations Demo ===")
-	
+
 	// 批量PUT
 	fmt.Println("Performing batch PUT...")
 	batchOps := []types.Request{
@@ -188,7 +188,7 @@ func main() {
 		{Op: "PUT", Key: "batch2", Value: "batch-value2"},
 		{Op: "PUT", Key: "batch3", Value: "batch-value3"},
 	}
-	
+
 	batchResp, err := client.Batch(batchOps)
 	if err != nil {
 		log.Printf("Failed to execute batch: %v", err)
@@ -208,7 +208,7 @@ func main() {
 		{Op: "DELETE", Key: "batch1"},
 		{Op: "DELETE", Key: "batch3"},
 	}
-	
+
 	deleteResp, err := client.Batch(deleteOps)
 	if err != nil {
 		log.Printf("Failed to execute batch delete: %v", err)
@@ -236,7 +236,7 @@ func main() {
 			log.Printf("Failed to delete key %s: %v", key, err)
 		}
 	}
-	
+
 	// 清理剩余的batch键
 	client.Delete("batch2")
 

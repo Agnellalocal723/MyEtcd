@@ -133,7 +133,7 @@ func (bs *BenchmarkSuite) RunPutBenchmark() (*BenchmarkResult, error) {
 		successCount int64
 		errorCount   int64
 		totalLatency int64
-		latencies     []int64
+		latencies    []int64
 	)
 
 	startTime := time.Now()
@@ -206,7 +206,7 @@ func (bs *BenchmarkSuite) RunGetBenchmark() (*BenchmarkResult, error) {
 		successCount int64
 		errorCount   int64
 		totalLatency int64
-		latencies     []int64
+		latencies    []int64
 	)
 
 	startTime := time.Now()
@@ -277,7 +277,7 @@ func (bs *BenchmarkSuite) RunDeleteBenchmark() (*BenchmarkResult, error) {
 		successCount int64
 		errorCount   int64
 		totalLatency int64
-		latencies     []int64
+		latencies    []int64
 	)
 
 	startTime := time.Now()
@@ -339,7 +339,7 @@ func (bs *BenchmarkSuite) RunBatchBenchmark() (*BenchmarkResult, error) {
 		successCount int64
 		errorCount   int64
 		totalLatency int64
-		latencies     []int64
+		latencies    []int64
 	)
 
 	startTime := time.Now()
@@ -418,8 +418,8 @@ func (bs *BenchmarkSuite) RunConcurrentBenchmark() (*BenchmarkResult, error) {
 		successCount int64
 		errorCount   int64
 		totalLatency int64
-		latencies     []int64
-		opCount       int64
+		latencies    []int64
+		opCount      int64
 	)
 
 	startTime := time.Now()

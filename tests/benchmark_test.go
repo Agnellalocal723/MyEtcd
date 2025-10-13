@@ -20,31 +20,31 @@ import (
 // TestDefaultBenchmarkConfig 测试默认基准测试配置
 func TestDefaultBenchmarkConfig(t *testing.T) {
 	config := benchmark.DefaultBenchmarkConfig()
-	
+
 	if config.ClientCount != 10 {
 		t.Errorf("Expected ClientCount to be 10, got %d", config.ClientCount)
 	}
-	
+
 	if config.OperationsCount != 10000 {
 		t.Errorf("Expected OperationsCount to be 10000, got %d", config.OperationsCount)
 	}
-	
+
 	if config.KeySize != 16 {
 		t.Errorf("Expected KeySize to be 16, got %d", config.KeySize)
 	}
-	
+
 	if config.ValueSize != 128 {
 		t.Errorf("Expected ValueSize to be 128, got %d", config.ValueSize)
 	}
-	
+
 	if config.ConcurrentLevel != 100 {
 		t.Errorf("Expected ConcurrentLevel to be 100, got %d", config.ConcurrentLevel)
 	}
-	
+
 	if config.TestDuration != 30*time.Second {
 		t.Errorf("Expected TestDuration to be 30s, got %v", config.TestDuration)
 	}
-	
+
 	if config.ServerAddr != "localhost:2379" {
 		t.Errorf("Expected ServerAddr to be 'localhost:2379', got %s", config.ServerAddr)
 	}
@@ -54,11 +54,11 @@ func TestDefaultBenchmarkConfig(t *testing.T) {
 func TestBenchmarkSuiteCreation(t *testing.T) {
 	config := benchmark.DefaultBenchmarkConfig()
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	if suite == nil {
 		t.Fatal("Expected benchmark suite to be created, got nil")
 	}
-	
+
 	// 由于config和client是私有字段，我们无法直接访问它们
 	// 但我们可以通过测试其他方法来验证套件是否正确初始化
 }
@@ -74,24 +74,24 @@ func TestCustomBenchmarkConfig(t *testing.T) {
 		TestDuration:    60 * time.Second,
 		ServerAddr:      "example.com:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 验证套件是否成功创建
 	if suite == nil {
 		t.Fatal("Expected benchmark suite to be created, got nil")
 	}
-	
+
 	// 由于config是私有字段，我们无法直接访问它
 	// 但我们可以通过验证原始配置来确保它被正确设置
 	if config.ClientCount != 5 {
 		t.Errorf("Expected ClientCount to be 5, got %d", config.ClientCount)
 	}
-	
+
 	if config.OperationsCount != 5000 {
 		t.Errorf("Expected OperationsCount to be 5000, got %d", config.OperationsCount)
 	}
-	
+
 	if config.ServerAddr != "example.com:2379" {
 		t.Errorf("Expected ServerAddr to be 'example.com:2379', got %s", config.ServerAddr)
 	}
@@ -108,18 +108,18 @@ func BenchmarkPutOperation(b *testing.B) {
 		TestDuration:    30 * time.Second,
 		ServerAddr:      "localhost:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 重置计时器
 	b.ResetTimer()
-	
+
 	// 运行基准测试
 	result, err := suite.RunPutBenchmark()
 	if err != nil {
 		b.Fatalf("PUT benchmark failed: %v", err)
 	}
-	
+
 	// 报告结果
 	b.ReportMetric(result.Throughput, "ops/sec")
 	b.ReportMetric(float64(result.AvgLatency.Nanoseconds()), "avg_latency_ns")
@@ -137,18 +137,18 @@ func BenchmarkGetOperation(b *testing.B) {
 		TestDuration:    30 * time.Second,
 		ServerAddr:      "localhost:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 重置计时器
 	b.ResetTimer()
-	
+
 	// 运行基准测试
 	result, err := suite.RunGetBenchmark()
 	if err != nil {
 		b.Fatalf("GET benchmark failed: %v", err)
 	}
-	
+
 	// 报告结果
 	b.ReportMetric(result.Throughput, "ops/sec")
 	b.ReportMetric(float64(result.AvgLatency.Nanoseconds()), "avg_latency_ns")
@@ -166,18 +166,18 @@ func BenchmarkDeleteOperation(b *testing.B) {
 		TestDuration:    30 * time.Second,
 		ServerAddr:      "localhost:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 重置计时器
 	b.ResetTimer()
-	
+
 	// 运行基准测试
 	result, err := suite.RunDeleteBenchmark()
 	if err != nil {
 		b.Fatalf("DELETE benchmark failed: %v", err)
 	}
-	
+
 	// 报告结果
 	b.ReportMetric(result.Throughput, "ops/sec")
 	b.ReportMetric(float64(result.AvgLatency.Nanoseconds()), "avg_latency_ns")
@@ -195,18 +195,18 @@ func BenchmarkBatchOperation(b *testing.B) {
 		TestDuration:    30 * time.Second,
 		ServerAddr:      "localhost:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 重置计时器
 	b.ResetTimer()
-	
+
 	// 运行基准测试
 	result, err := suite.RunBatchBenchmark()
 	if err != nil {
 		b.Fatalf("Batch benchmark failed: %v", err)
 	}
-	
+
 	// 报告结果
 	b.ReportMetric(result.Throughput, "ops/sec")
 	b.ReportMetric(float64(result.AvgLatency.Nanoseconds()), "avg_latency_ns")
@@ -224,18 +224,18 @@ func BenchmarkConcurrentOperation(b *testing.B) {
 		TestDuration:    10 * time.Second, // 较短的测试时间
 		ServerAddr:      "localhost:2379",
 	}
-	
+
 	suite := benchmark.NewBenchmarkSuite(config)
-	
+
 	// 重置计时器
 	b.ResetTimer()
-	
+
 	// 运行基准测试
 	result, err := suite.RunConcurrentBenchmark()
 	if err != nil {
 		b.Fatalf("Concurrent benchmark failed: %v", err)
 	}
-	
+
 	// 报告结果
 	b.ReportMetric(result.Throughput, "ops/sec")
 	b.ReportMetric(float64(result.AvgLatency.Nanoseconds()), "avg_latency_ns")
@@ -252,28 +252,28 @@ func TestBenchmarkResultValidation(t *testing.T) {
 		SuccessCount: 950,
 		ErrorCount:   50,
 	}
-	
+
 	// 计算派生字段
 	result.ErrorRate = float64(result.ErrorCount) / float64(result.Operations)
 	result.Throughput = float64(result.SuccessCount) / result.Duration.Seconds()
-	result.AvgLatency = time.Duration(5000000) // 5ms
+	result.AvgLatency = time.Duration(5000000)  // 5ms
 	result.P99Latency = time.Duration(10000000) // 10ms
-	
+
 	// 验证计算结果
 	expectedErrorRate := 0.05 // 5%
 	if result.ErrorRate != expectedErrorRate {
 		t.Errorf("Expected ErrorRate to be %f, got %f", expectedErrorRate, result.ErrorRate)
 	}
-	
+
 	expectedThroughput := 95.0 // 950 ops / 10s
 	if result.Throughput != expectedThroughput {
 		t.Errorf("Expected Throughput to be %f, got %f", expectedThroughput, result.Throughput)
 	}
-	
+
 	if result.AvgLatency != 5*time.Millisecond {
 		t.Errorf("Expected AvgLatency to be 5ms, got %v", result.AvgLatency)
 	}
-	
+
 	if result.P99Latency != 10*time.Millisecond {
 		t.Errorf("Expected P99Latency to be 10ms, got %v", result.P99Latency)
 	}
@@ -306,7 +306,7 @@ func TestPrintResults(t *testing.T) {
 			P99Latency:   5 * time.Millisecond,
 		},
 	}
-	
+
 	// 这个测试只是确保函数不会panic
 	// 在实际测试中，我们不会验证输出内容
 	defer func() {
@@ -314,6 +314,6 @@ func TestPrintResults(t *testing.T) {
 			t.Errorf("PrintResults panicked: %v", r)
 		}
 	}()
-	
+
 	benchmark.PrintResults(results)
 }

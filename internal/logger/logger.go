@@ -193,11 +193,11 @@ func (w *ConsoleWriter) Close() error {
 
 // FileWriter 文件写入器
 type FileWriter struct {
-	file     *os.File
-	filename string
-	maxSize  int64
-	current  int64
-	mu       sync.Mutex
+	file      *os.File
+	filename  string
+	maxSize   int64
+	current   int64
+	mu        sync.Mutex
 	Formatter Formatter
 }
 

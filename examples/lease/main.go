@@ -21,7 +21,7 @@ func main() {
 
 	// 租约演示
 	fmt.Println("\n=== Lease Demo ===")
-	
+
 	// 1. 创建租约
 	fmt.Println("Creating lease with 10 second TTL...")
 	leaseID, err := client.GrantLease(10)
@@ -43,12 +43,12 @@ func main() {
 	fmt.Println("\nAttaching key to lease...")
 	testKey := "lease-test-key"
 	testValue := "lease-test-value"
-	
+
 	// 先创建键
 	if err := client.Put(testKey, testValue, 0); err != nil {
 		log.Fatalf("Failed to put key: %v", err)
 	}
-	
+
 	// 将键附加到租约（注意：这里需要通过API实现，目前我们通过存储引擎直接操作）
 	fmt.Printf("✓ Key '%s' attached to lease %d\n", testKey, leaseID)
 
@@ -56,13 +56,13 @@ func main() {
 	fmt.Println("\nDemonstrating lease keep-alive...")
 	for i := 0; i < 3; i++ {
 		time.Sleep(2 * time.Second)
-		
+
 		ttl, err := client.KeepAliveLease(leaseID)
 		if err != nil {
 			log.Printf("Failed to keep alive lease: %v", err)
 			break
 		}
-		
+
 		fmt.Printf("✓ Lease %d kept alive, TTL: %d\n", leaseID, ttl)
 	}
 
@@ -95,25 +95,25 @@ func main() {
 
 	// 7. 演示租约过期
 	fmt.Println("\nDemonstrating lease expiry...")
-	
+
 	// 创建一个短期租约
 	shortLeaseID, err := client.GrantLease(3)
 	if err != nil {
 		log.Fatalf("Failed to grant short lease: %v", err)
 	}
 	fmt.Printf("✓ Short lease %d created with 3 second TTL\n", shortLeaseID)
-	
+
 	// 创建键并附加到租约
 	expiryKey := "expiry-demo-key"
 	if err := client.Put(expiryKey, "this-will-expire", 0); err != nil {
 		log.Fatalf("Failed to put expiry key: %v", err)
 	}
 	fmt.Printf("✓ Key '%s' created\n", expiryKey)
-	
+
 	// 等待租约过期
 	fmt.Println("Waiting for lease to expire...")
 	time.Sleep(4 * time.Second)
-	
+
 	// 尝试获取租约
 	_, err = client.GetLease(shortLeaseID)
 	if err != nil {
@@ -124,26 +124,26 @@ func main() {
 
 	// 8. 撤销租约演示
 	fmt.Println("\nDemonstrating lease revocation...")
-	
+
 	// 创建一个租约
 	revokeLeaseID, err := client.GrantLease(30)
 	if err != nil {
 		log.Fatalf("Failed to grant revoke lease: %v", err)
 	}
 	fmt.Printf("✓ Lease %d created for revocation demo\n", revokeLeaseID)
-	
+
 	// 验证租约存在
 	_, err = client.GetLease(revokeLeaseID)
 	if err != nil {
 		log.Fatalf("Failed to get lease before revocation: %v", err)
 	}
-	
+
 	// 撤销租约
 	if err := client.RevokeLease(revokeLeaseID); err != nil {
 		log.Fatalf("Failed to revoke lease: %v", err)
 	}
 	fmt.Printf("✓ Lease %d revoked\n", revokeLeaseID)
-	
+
 	// 验证租约已撤销
 	_, err = client.GetLease(revokeLeaseID)
 	if err != nil {
@@ -154,25 +154,25 @@ func main() {
 
 	// 9. TTL集成演示
 	fmt.Println("\n=== TTL Integration Demo ===")
-	
+
 	// 创建带TTL的键
 	fmt.Println("Creating key with 5 second TTL...")
 	if err := client.Put("ttl-integration-key", "ttl-value", 5); err != nil {
 		log.Fatalf("Failed to put TTL key: %v", err)
 	}
 	fmt.Println("✓ Key created with TTL")
-	
+
 	// 立即获取
 	resp, err := client.Get("ttl-integration-key")
 	if err != nil {
 		log.Fatalf("Failed to get TTL key: %v", err)
 	}
 	fmt.Printf("✓ Key value: %s\n", resp.Value)
-	
+
 	// 等待过期
 	fmt.Println("Waiting for key to expire...")
 	time.Sleep(6 * time.Second)
-	
+
 	// 尝试获取已过期的键
 	_, err = client.Get("ttl-integration-key")
 	if err != nil {
@@ -183,7 +183,7 @@ func main() {
 
 	// 10. 清理演示
 	fmt.Println("\n=== Cleanup ===")
-	
+
 	// 撤销所有创建的租约
 	allLeaseIDs := append([]int64{leaseID}, leaseIDs...)
 	for _, id := range allLeaseIDs {
@@ -193,7 +193,7 @@ func main() {
 			fmt.Printf("✓ Revoked lease %d\n", id)
 		}
 	}
-	
+
 	// 删除测试键
 	testKeys := []string{testKey, expiryKey}
 	for _, key := range testKeys {
@@ -206,14 +206,14 @@ func main() {
 
 	// 11. 最终状态检查
 	fmt.Println("\n=== Final Status ===")
-	
+
 	leases, err = client.ListLeases()
 	if err != nil {
 		log.Printf("Failed to list final leases: %v", err)
 	} else {
 		fmt.Printf("Active leases count: %d\n", len(leases))
 	}
-	
+
 	// 获取服务器状态
 	status, err := client.Status()
 	if err != nil {

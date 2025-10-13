@@ -18,11 +18,11 @@ import (
 func NewHandler() http.Handler {
 	// 创建一个自定义的注册表，包含我们所有的指标
 	registry := prometheus.NewRegistry()
-	
+
 	// 注册默认的Go指标
 	registry.MustRegister(prometheus.NewGoCollector())
 	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
-	
+
 	// 注册我们的自定义指标
 	metrics := GetMetrics()
 	registry.MustRegister(
@@ -45,7 +45,7 @@ func NewHandler() http.Handler {
 		metrics.goRoutines,
 		metrics.gcPauseDuration,
 	)
-	
+
 	// 返回一个Prometheus HTTP处理器
 	return promhttp.HandlerFor(registry, promhttp.HandlerOpts{
 		EnableOpenMetrics: true,

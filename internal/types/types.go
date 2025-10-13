@@ -29,24 +29,24 @@ func (c CommandType) String() string {
 
 // Command 表示一个操作命令
 type Command struct {
-	Type    CommandType `json:"type"`
-	Key     string      `json:"key"`
-	Value   []byte      `json:"value,omitempty"`
-	Term    uint64      `json:"term"`
-	Index   uint64      `json:"index"`
-	Time    time.Time   `json:"time"`
+	Type  CommandType `json:"type"`
+	Key   string      `json:"key"`
+	Value []byte      `json:"value,omitempty"`
+	Term  uint64      `json:"term"`
+	Index uint64      `json:"index"`
+	Time  time.Time   `json:"time"`
 }
 
 // KeyValue 键值对
 type KeyValue struct {
-	Key         string    `json:"key"`
-	Value       []byte    `json:"value"`
-	Created     time.Time `json:"created"`
-	Modified    time.Time `json:"modified"`
-	Version     int64     `json:"version"`
-	TTL         int64     `json:"ttl"`         // 生存时间(秒)，0表示永不过期
-	Expires     time.Time `json:"expires"`     // 过期时间
-	LeaseID     int64     `json:"lease_id"`    // 租约ID
+	Key      string    `json:"key"`
+	Value    []byte    `json:"value"`
+	Created  time.Time `json:"created"`
+	Modified time.Time `json:"modified"`
+	Version  int64     `json:"version"`
+	TTL      int64     `json:"ttl"`      // 生存时间(秒)，0表示永不过期
+	Expires  time.Time `json:"expires"`  // 过期时间
+	LeaseID  int64     `json:"lease_id"` // 租约ID
 }
 
 // IsExpired 检查键值是否过期
@@ -59,10 +59,10 @@ func (kv *KeyValue) IsExpired() bool {
 
 // Transaction 事务
 type Transaction struct {
-	ID        string      `json:"id"`
+	ID         string      `json:"id"`
 	Operations []Operation `json:"operations"`
-	Timestamp time.Time   `json:"timestamp"`
-	Status    TxnStatus   `json:"status"`
+	Timestamp  time.Time   `json:"timestamp"`
+	Status     TxnStatus   `json:"status"`
 }
 
 // Operation 事务操作
@@ -107,28 +107,28 @@ type WALRecord struct {
 
 // Snapshot 快照
 type Snapshot struct {
-	Index     uint64                 `json:"index"`
-	Term      uint64                 `json:"term"`
-	Data      map[string]*KeyValue   `json:"data"`
-	Checksum  uint32                 `json:"checksum"`
-	Timestamp time.Time              `json:"timestamp"`
+	Index     uint64               `json:"index"`
+	Term      uint64               `json:"term"`
+	Data      map[string]*KeyValue `json:"data"`
+	Checksum  uint32               `json:"checksum"`
+	Timestamp time.Time            `json:"timestamp"`
 }
 
 // Config 配置
 type Config struct {
-	DataDir        string        `json:"data_dir"`
-	WALDir         string        `json:"wal_dir"`
-	SnapshotDir    string        `json:"snapshot_dir"`
-	SnapshotInterval time.Duration `json:"snapshot_interval"`
-	MaxWALSize     int64         `json:"max_wal_size"`
-	MaxSnapshots   int           `json:"max_snapshots"`
+	DataDir           string        `json:"data_dir"`
+	WALDir            string        `json:"wal_dir"`
+	SnapshotDir       string        `json:"snapshot_dir"`
+	SnapshotInterval  time.Duration `json:"snapshot_interval"`
+	MaxWALSize        int64         `json:"max_wal_size"`
+	MaxSnapshots      int           `json:"max_snapshots"`
 	HeartbeatInterval time.Duration `json:"heartbeat_interval"`
-	ElectionTimeout time.Duration  `json:"election_timeout"`
-	
+	ElectionTimeout   time.Duration `json:"election_timeout"`
+
 	// Raft配置
-	NodeID         string            `json:"node_id"`         // 节点唯一标识
-	ClusterNodes   []string          `json:"cluster_nodes"`   // 集群中所有节点的ID
-	NodeAddresses  map[string]string `json:"node_addresses"`  // 节点ID到地址的映射
+	NodeID        string            `json:"node_id"`        // 节点唯一标识
+	ClusterNodes  []string          `json:"cluster_nodes"`  // 集群中所有节点的ID
+	NodeAddresses map[string]string `json:"node_addresses"` // 节点ID到地址的映射
 }
 
 // DefaultConfig 返回默认配置
@@ -164,11 +164,11 @@ type PutRequest struct {
 
 // GetResponse GET响应
 type GetResponse struct {
-	Key     string    `json:"key"`
-	Value   string    `json:"value"`
-	Created time.Time `json:"created"`
+	Key      string    `json:"key"`
+	Value    string    `json:"value"`
+	Created  time.Time `json:"created"`
 	Modified time.Time `json:"modified"`
-	Version int64     `json:"version"`
+	Version  int64     `json:"version"`
 }
 
 // TxnRequest 事务请求
@@ -180,14 +180,14 @@ type TxnRequest struct {
 
 // Compare 比较条件
 type Compare struct {
-	Key    string      `json:"key"`
-	Op     string      `json:"op"`     // "=", "!=", ">", "<"
-	Value  interface{} `json:"value"`
+	Key   string      `json:"key"`
+	Op    string      `json:"op"` // "=", "!=", ">", "<"
+	Value interface{} `json:"value"`
 }
 
 // Request 请求操作
 type Request struct {
-	Op    string `json:"op"`    // "PUT", "GET", "DELETE"
+	Op    string `json:"op"` // "PUT", "GET", "DELETE"
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
 }
@@ -224,10 +224,10 @@ func (e WatchEventType) String() string {
 
 // WatchRequest Watch请求
 type WatchRequest struct {
-	Key      string `json:"key"`
-	Prefix   bool   `json:"prefix,omitempty"`
-	PrevKV   bool   `json:"prev_kv,omitempty"`
-	WatchID  int64  `json:"watch_id"`
+	Key     string `json:"key"`
+	Prefix  bool   `json:"prefix,omitempty"`
+	PrevKV  bool   `json:"prev_kv,omitempty"`
+	WatchID int64  `json:"watch_id"`
 }
 
 // WatchResponse Watch响应
@@ -246,10 +246,10 @@ type RangeRequest struct {
 
 // RangeResponse 范围查询响应
 type RangeResponse struct {
-	Kvs    []*KeyValue `json:"kvs"`
-	More   bool        `json:"more"`
-	Count  int64       `json:"count"`
-	Revision int64     `json:"revision"`
+	Kvs      []*KeyValue `json:"kvs"`
+	More     bool        `json:"more"`
+	Count    int64       `json:"count"`
+	Revision int64       `json:"revision"`
 }
 
 // BatchRequest 批量操作请求
@@ -267,10 +267,10 @@ type BatchResponse struct {
 // Lease 租约
 type Lease struct {
 	ID        int64     `json:"id"`
-	TTL       int64     `json:"ttl"`        // 租约TTL（秒）
-	Remaining int64     `json:"remaining"`  // 剩余时间（秒）
-	Granted   time.Time `json:"granted"`    // 授予时间
-	Keys      []string  `json:"keys"`       // 关联的键
+	TTL       int64     `json:"ttl"`       // 租约TTL（秒）
+	Remaining int64     `json:"remaining"` // 剩余时间（秒）
+	Granted   time.Time `json:"granted"`   // 授予时间
+	Keys      []string  `json:"keys"`      // 关联的键
 }
 
 // LeaseRequest 租约请求
@@ -293,8 +293,8 @@ type LeaseGrantRequest struct {
 
 // LeaseGrantResponse 授予租约响应
 type LeaseGrantResponse struct {
-	ID    int64 `json:"id"`
-	TTL   int64 `json:"ttl"`
+	ID    int64  `json:"id"`
+	TTL   int64  `json:"ttl"`
 	Error string `json:"error,omitempty"`
 }
 
@@ -324,7 +324,7 @@ type LeaseKeepAliveResponse struct {
 type ResponseHeader struct {
 	ClusterID uint64 `json:"cluster_id"`
 	MemberID  uint64 `json:"member_id"`
-	Revision  int64 `json:"revision"`
+	Revision  int64  `json:"revision"`
 	RaftTerm  uint64 `json:"raft_term"`
 }
 
@@ -345,9 +345,9 @@ type Metrics struct {
 type NodeState int
 
 const (
-	Follower NodeState = iota // 跟随者
-	Candidate                 // 候选者
-	Leader                    // 领导者
+	Follower  NodeState = iota // 跟随者
+	Candidate                  // 候选者
+	Leader                     // 领导者
 )
 
 // String 返回节点状态的字符串表示
@@ -375,12 +375,12 @@ type LogEntry struct {
 type RaftMessageType int
 
 const (
-	MsgAppendEntries RaftMessageType = iota // 追加条目RPC
-	MsgAppendEntriesResponse               // 追加条目响应
-	MsgRequestVote                        // 请求投票RPC
-	MsgRequestVoteResponse                 // 请求投票响应
-	MsgInstallSnapshot                    // 安装快照RPC
-	MsgInstallSnapshotResponse            // 安装快照响应
+	MsgAppendEntries           RaftMessageType = iota // 追加条目RPC
+	MsgAppendEntriesResponse                          // 追加条目响应
+	MsgRequestVote                                    // 请求投票RPC
+	MsgRequestVoteResponse                            // 请求投票响应
+	MsgInstallSnapshot                                // 安装快照RPC
+	MsgInstallSnapshotResponse                        // 安装快照响应
 )
 
 // String 返回消息类型的字符串表示
@@ -405,19 +405,19 @@ func (m RaftMessageType) String() string {
 
 // RaftMessage Raft消息
 type RaftMessage struct {
-	Type      RaftMessageType `json:"type"`       // 消息类型
-	Term      uint64          `json:"term"`       // 发送者的任期号
-	From      string          `json:"from"`       // 发送者ID
-	To        string          `json:"to"`         // 接收者ID
+	Type RaftMessageType `json:"type"` // 消息类型
+	Term uint64          `json:"term"` // 发送者的任期号
+	From string          `json:"from"` // 发送者ID
+	To   string          `json:"to"`   // 接收者ID
 
 	// AppendEntries字段
-	PrevLogIndex uint64      `json:"prev_log_index,omitempty"` // 前一个日志条目的索引
-	PrevLogTerm  uint64      `json:"prev_log_term,omitempty"`  // 前一个日志条目的任期号
-	Entries      []LogEntry  `json:"entries,omitempty"`        // 日志条目
-	LeaderCommit uint64      `json:"leader_commit,omitempty"`  // 领导者的提交索引
+	PrevLogIndex uint64     `json:"prev_log_index,omitempty"` // 前一个日志条目的索引
+	PrevLogTerm  uint64     `json:"prev_log_term,omitempty"`  // 前一个日志条目的任期号
+	Entries      []LogEntry `json:"entries,omitempty"`        // 日志条目
+	LeaderCommit uint64     `json:"leader_commit,omitempty"`  // 领导者的提交索引
 
 	// AppendEntriesResponse字段
-	Success bool `json:"success,omitempty"` // 是否成功
+	Success    bool   `json:"success,omitempty"`     // 是否成功
 	MatchIndex uint64 `json:"match_index,omitempty"` // 匹配的日志索引
 
 	// RequestVote字段

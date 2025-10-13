@@ -30,19 +30,19 @@ Raft集群管理器
 
 // Cluster Raft集群
 type Cluster struct {
-	mu      sync.RWMutex          // 读写锁
-	nodes   map[string]*Node      // 节点ID到节点的映射
+	mu      sync.RWMutex             // 读写锁
+	nodes   map[string]*Node         // 节点ID到节点的映射
 	configs map[string]*types.Config // 节点ID到配置的映射
-	
+
 	// 集群配置
-	clusterConfig *types.Config   // 集群配置模板
-	
+	clusterConfig *types.Config // 集群配置模板
+
 	// 状态
-	leader string                // 当前领导者
-	
+	leader string // 当前领导者
+
 	// 通信
 	transports map[string]*HTTPTransport // 节点ID到传输层的映射
-	
+
 	// 状态机
 	stateMachines map[string]*SimpleStateMachine // 节点ID到状态机的映射
 }
@@ -50,10 +50,10 @@ type Cluster struct {
 // NewCluster 创建新的Raft集群
 func NewCluster(config *types.Config) *Cluster {
 	return &Cluster{
-		nodes:        make(map[string]*Node),
-		configs:      make(map[string]*types.Config),
+		nodes:         make(map[string]*Node),
+		configs:       make(map[string]*types.Config),
 		clusterConfig: config,
-		transports:   make(map[string]*HTTPTransport),
+		transports:    make(map[string]*HTTPTransport),
 		stateMachines: make(map[string]*SimpleStateMachine),
 	}
 }
@@ -62,24 +62,24 @@ func NewCluster(config *types.Config) *Cluster {
 func (c *Cluster) AddNode(nodeID, addr string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// 检查节点是否已存在
 	if _, exists := c.nodes[nodeID]; exists {
 		return fmt.Errorf("node %s already exists", nodeID)
 	}
-	
+
 	// 创建节点配置
 	nodeConfig := *c.clusterConfig // 复制集群配置
 	nodeConfig.NodeID = nodeID
-	
+
 	// 确保NodeAddresses映射存在
 	if nodeConfig.NodeAddresses == nil {
 		nodeConfig.NodeAddresses = make(map[string]string)
 	}
-	
+
 	// 添加节点地址映射
 	nodeConfig.NodeAddresses[nodeID] = addr
-	
+
 	// 添加节点到集群节点列表
 	found := false
 	for _, n := range nodeConfig.ClusterNodes {
@@ -91,23 +91,23 @@ func (c *Cluster) AddNode(nodeID, addr string) error {
 	if !found {
 		nodeConfig.ClusterNodes = append(nodeConfig.ClusterNodes, nodeID)
 	}
-	
+
 	// 创建状态机
 	stateMachine := NewSimpleStateMachine()
 	c.stateMachines[nodeID] = stateMachine
-	
+
 	// 创建传输层
 	transport := NewHTTPTransport(nodeID, addr, nil)
 	c.transports[nodeID] = transport
-	
+
 	// 创建Raft节点
 	node := NewNode(&nodeConfig, transport, stateMachine)
 	transport.SetNode(node)
-	
+
 	// 保存节点和配置
 	c.nodes[nodeID] = node
 	c.configs[nodeID] = &nodeConfig
-	
+
 	log.Printf("Added node %s at %s to cluster", nodeID, addr)
 	return nil
 }
@@ -116,22 +116,22 @@ func (c *Cluster) AddNode(nodeID, addr string) error {
 func (c *Cluster) RemoveNode(nodeID string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// 检查节点是否存在
 	node, exists := c.nodes[nodeID]
 	if !exists {
 		return fmt.Errorf("node %s not found", nodeID)
 	}
-	
+
 	// 停止节点
 	node.Stop()
-	
+
 	// 停止传输层
 	if transport, exists := c.transports[nodeID]; exists {
 		transport.Stop()
 		delete(c.transports, nodeID)
 	}
-	
+
 	// 从集群节点列表中移除
 	for i, n := range c.clusterConfig.ClusterNodes {
 		if n == nodeID {
@@ -141,17 +141,17 @@ func (c *Cluster) RemoveNode(nodeID string) error {
 			break
 		}
 	}
-	
+
 	// 删除节点和配置
 	delete(c.nodes, nodeID)
 	delete(c.configs, nodeID)
 	delete(c.stateMachines, nodeID)
-	
+
 	// 更新其他节点的集群配置
 	for _, otherNode := range c.nodes {
 		otherNode.config.ClusterNodes = c.clusterConfig.ClusterNodes
 	}
-	
+
 	log.Printf("Removed node %s from cluster", nodeID)
 	return nil
 }
@@ -160,7 +160,7 @@ func (c *Cluster) RemoveNode(nodeID string) error {
 func (c *Cluster) Start() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// 更新所有节点的节点地址映射
 	for nodeID, node := range c.nodes {
 		// 创建新的节点地址映射，避免共享引用
@@ -169,13 +169,13 @@ func (c *Cluster) Start() error {
 			nodeAddresses[id] = addr
 		}
 		node.config.NodeAddresses = nodeAddresses
-		
+
 		log.Printf("Node %s has %d nodes in cluster", nodeID, len(node.config.ClusterNodes))
 		for _, id := range node.config.ClusterNodes {
 			log.Printf("Node %s knows %s at %s", nodeID, id, node.config.NodeAddresses[id])
 		}
 	}
-	
+
 	// 启动所有节点的传输层
 	for nodeID, transport := range c.transports {
 		go func(id string, t *HTTPTransport) {
@@ -185,11 +185,11 @@ func (c *Cluster) Start() error {
 				log.Printf("Successfully started transport for node %s", id)
 			}
 		}(nodeID, transport)
-		
+
 		// 等待传输层启动
 		time.Sleep(200 * time.Millisecond)
 	}
-	
+
 	// 启动所有Raft节点
 	for nodeID, node := range c.nodes {
 		go func(id string, n *Node) {
@@ -197,10 +197,10 @@ func (c *Cluster) Start() error {
 			log.Printf("Started Raft node %s", id)
 		}(nodeID, node)
 	}
-	
+
 	// 不在这里调用updateLeader，避免死锁
 	// 领导者选举将由测试代码通过WaitForLeader方法检查
-	
+
 	log.Printf("Cluster started with %d nodes", len(c.nodes))
 	return nil
 }
@@ -209,19 +209,19 @@ func (c *Cluster) Start() error {
 func (c *Cluster) Stop() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// 停止所有Raft节点
 	for nodeID, node := range c.nodes {
 		node.Stop()
 		log.Printf("Stopped Raft node %s", nodeID)
 	}
-	
+
 	// 停止所有传输层
 	for nodeID, transport := range c.transports {
 		transport.Stop()
 		log.Printf("Stopped transport for node %s", nodeID)
 	}
-	
+
 	log.Printf("Cluster stopped")
 	return nil
 }
@@ -242,7 +242,7 @@ func (c *Cluster) updateLeader() {
 		nodes[id] = node
 	}
 	c.mu.RUnlock()
-	
+
 	// 检查每个节点的状态
 	for nodeID, node := range nodes {
 		state, term := node.GetState()
@@ -254,7 +254,7 @@ func (c *Cluster) updateLeader() {
 			return
 		}
 	}
-	
+
 	c.mu.Lock()
 	c.leader = ""
 	c.mu.Unlock()
@@ -272,7 +272,7 @@ func (c *Cluster) GetNode(nodeID string) *Node {
 func (c *Cluster) GetNodes() map[string]*Node {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	result := make(map[string]*Node)
 	for id, node := range c.nodes {
 		result[id] = node
@@ -296,11 +296,11 @@ func (c *Cluster) Propose(command types.Command) error {
 		nodes[id] = node
 	}
 	c.mu.RUnlock()
-	
+
 	// 找到领导者节点
 	var leader string
 	var leaderNode *Node
-	
+
 	for nodeID, node := range nodes {
 		state, _ := node.GetState()
 		if state == types.Leader {
@@ -309,27 +309,27 @@ func (c *Cluster) Propose(command types.Command) error {
 			break
 		}
 	}
-	
+
 	if leader == "" {
 		return fmt.Errorf("no leader available")
 	}
-	
+
 	if leaderNode == nil {
 		return fmt.Errorf("leader node %s not found", leader)
 	}
-	
+
 	log.Printf("Cluster proposing command to leader %s: type=%s, key=%s",
 		leader, command.Type.String(), command.Key)
-	
+
 	err := leaderNode.Propose(command)
 	if err != nil {
 		log.Printf("Failed to propose command to leader %s: %v", leader, err)
 		return err
 	}
-	
+
 	log.Printf("Successfully proposed command to leader %s: type=%s, key=%s",
 		leader, command.Type.String(), command.Key)
-	
+
 	return nil
 }
 
@@ -337,35 +337,35 @@ func (c *Cluster) Propose(command types.Command) error {
 func (c *Cluster) GetClusterStatus() map[string]interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	status := map[string]interface{}{
-		"leader":      c.leader,
-		"node_count":  len(c.nodes),
-		"nodes":       make(map[string]interface{}),
+		"leader":     c.leader,
+		"node_count": len(c.nodes),
+		"nodes":      make(map[string]interface{}),
 	}
-	
+
 	for nodeID, node := range c.nodes {
 		state, term := node.GetState()
 		nodeStatus := map[string]interface{}{
 			"state": state.String(),
 			"term":  term,
 		}
-		
+
 		// 添加状态机信息
 		if sm, exists := c.stateMachines[nodeID]; exists {
 			nodeStatus["key_count"] = sm.Size()
 		}
-		
+
 		status["nodes"].(map[string]interface{})[nodeID] = nodeStatus
 	}
-	
+
 	return status
 }
 
 // WaitForLeader 等待领导者选举完成
 func (c *Cluster) WaitForLeader(timeout time.Duration) (string, error) {
 	deadline := time.Now().Add(timeout)
-	
+
 	for time.Now().Before(deadline) {
 		// 创建节点副本以避免在持有锁时调用节点方法
 		nodes := make(map[string]*Node)
@@ -374,7 +374,7 @@ func (c *Cluster) WaitForLeader(timeout time.Duration) (string, error) {
 			nodes[id] = node
 		}
 		c.mu.RUnlock()
-		
+
 		// 检查每个节点的状态
 		for nodeID, node := range nodes {
 			state, _ := node.GetState()
@@ -386,10 +386,10 @@ func (c *Cluster) WaitForLeader(timeout time.Duration) (string, error) {
 				return nodeID, nil
 			}
 		}
-		
+
 		time.Sleep(200 * time.Millisecond)
 	}
-	
+
 	return "", fmt.Errorf("no leader elected within timeout")
 }
 
@@ -398,14 +398,14 @@ func CreateTestCluster(nodeCount int) (*Cluster, error) {
 	// 预先创建节点ID和地址映射
 	nodeAddresses := make(map[string]string)
 	clusterNodes := make([]string, 0, nodeCount)
-	
+
 	for i := 1; i <= nodeCount; i++ {
 		nodeID := fmt.Sprintf("node%d", i)
 		addr := fmt.Sprintf("127.0.0.1:%d", 8000+i)
 		nodeAddresses[nodeID] = addr
 		clusterNodes = append(clusterNodes, nodeID)
 	}
-	
+
 	// 创建集群配置
 	config := &types.Config{
 		DataDir:           "./data",
@@ -420,19 +420,19 @@ func CreateTestCluster(nodeCount int) (*Cluster, error) {
 		ClusterNodes:      clusterNodes,
 		NodeAddresses:     nodeAddresses,
 	}
-	
+
 	// 创建集群
 	cluster := NewCluster(config)
-	
+
 	// 添加节点
 	for i := 1; i <= nodeCount; i++ {
 		nodeID := fmt.Sprintf("node%d", i)
 		addr := nodeAddresses[nodeID]
-		
+
 		if err := cluster.AddNode(nodeID, addr); err != nil {
 			return nil, fmt.Errorf("failed to add node %s: %w", nodeID, err)
 		}
 	}
-	
+
 	return cluster, nil
 }

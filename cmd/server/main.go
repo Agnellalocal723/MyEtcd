@@ -17,13 +17,13 @@ import (
 func main() {
 	// 解析命令行参数
 	var (
-		dataDir        = flag.String("data-dir", "./data", "Data directory")
-		walDir         = flag.String("wal-dir", "./data/wal", "WAL directory")
-		snapshotDir    = flag.String("snapshot-dir", "./data/snapshot", "Snapshot directory")
-		port           = flag.String("port", ":2379", "Server port")
-		maxWALSize     = flag.Int64("max-wal-size", 64*1024*1024, "Maximum WAL size in bytes")
+		dataDir          = flag.String("data-dir", "./data", "Data directory")
+		walDir           = flag.String("wal-dir", "./data/wal", "WAL directory")
+		snapshotDir      = flag.String("snapshot-dir", "./data/snapshot", "Snapshot directory")
+		port             = flag.String("port", ":2379", "Server port")
+		maxWALSize       = flag.Int64("max-wal-size", 64*1024*1024, "Maximum WAL size in bytes")
 		snapshotInterval = flag.Duration("snapshot-interval", time.Hour, "Snapshot interval")
-		maxSnapshots   = flag.Int("max-snapshots", 3, "Maximum number of snapshots to keep")
+		maxSnapshots     = flag.Int("max-snapshots", 3, "Maximum number of snapshots to keep")
 	)
 	flag.Parse()
 
@@ -72,7 +72,7 @@ func main() {
 
 	// 创建API服务器
 	server := api.NewServer(engine, config)
-	
+
 	// 设置服务器端口
 	server.SetAddr(*port)
 
@@ -94,7 +94,7 @@ func main() {
 
 	// 优雅关闭
 	shutdownStart := time.Now()
-	
+
 	// 停止HTTP服务器
 	if err := server.Stop(); err != nil {
 		log.Printf("Error stopping server: %v", err)

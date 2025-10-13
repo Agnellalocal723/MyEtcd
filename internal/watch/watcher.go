@@ -32,24 +32,24 @@ Watch是一种观察键值变化的机制，允许客户端实时接收键值存
 
 // Watcher Watch管理器
 type Watcher struct {
-	mu         sync.RWMutex
-	watches    map[int64]*Watch  // 活跃的Watch
-	watchers   map[string][]int64 // 键到Watch ID的映射
-	nextWatchID int64            // 下一个Watch ID
-	eventChan  chan *WatchEvent  // 事件通道
-	ctx        context.Context
-	cancel     context.CancelFunc
-	closed     bool
+	mu          sync.RWMutex
+	watches     map[int64]*Watch   // 活跃的Watch
+	watchers    map[string][]int64 // 键到Watch ID的映射
+	nextWatchID int64              // 下一个Watch ID
+	eventChan   chan *WatchEvent   // 事件通道
+	ctx         context.Context
+	cancel      context.CancelFunc
+	closed      bool
 }
 
 // Watch 单个Watch实例
 type Watch struct {
-	ID      int64             // Watch ID
-	Key     string            // 监听的键
-	Prefix  bool              // 是否前缀匹配
-	PrevKV  bool              // 是否返回之前的值
-	Chan    chan *WatchEvent  // 事件通道
-	Created time.Time         // 创建时间
+	ID      int64            // Watch ID
+	Key     string           // 监听的键
+	Prefix  bool             // 是否前缀匹配
+	PrevKV  bool             // 是否返回之前的值
+	Chan    chan *WatchEvent // 事件通道
+	Created time.Time        // 创建时间
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
@@ -67,7 +67,7 @@ type WatchEvent struct {
 // NewWatcher 创建新的Watcher
 func NewWatcher() *Watcher {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Watcher{
 		watches:     make(map[int64]*Watch),
 		watchers:    make(map[string][]int64),
@@ -87,19 +87,19 @@ func (w *Watcher) Start() {
 func (w *Watcher) Stop() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	if w.closed {
 		return
 	}
-	
+
 	w.closed = true
 	w.cancel()
-	
+
 	// 关闭所有Watch
 	for _, watch := range w.watches {
 		w.closeWatch(watch)
 	}
-	
+
 	close(w.eventChan)
 }
 
@@ -107,16 +107,16 @@ func (w *Watcher) Stop() {
 func (w *Watcher) Watch(key string, prefix, prevKV bool) (int64, <-chan *WatchEvent) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	if w.closed {
 		return 0, nil
 	}
-	
+
 	watchID := w.nextWatchID
 	w.nextWatchID++
-	
+
 	ctx, cancel := context.WithCancel(w.ctx)
-	
+
 	watch := &Watch{
 		ID:      watchID,
 		Key:     key,
@@ -127,9 +127,9 @@ func (w *Watcher) Watch(key string, prefix, prevKV bool) (int64, <-chan *WatchEv
 		ctx:     ctx,
 		cancel:  cancel,
 	}
-	
+
 	w.watches[watchID] = watch
-	
+
 	// 添加到映射中
 	if prefix {
 		// 前缀匹配，使用特殊的映射
@@ -138,10 +138,10 @@ func (w *Watcher) Watch(key string, prefix, prevKV bool) (int64, <-chan *WatchEv
 		// 精确匹配
 		w.watchers["exact:"+key] = append(w.watchers["exact:"+key], watchID)
 	}
-	
+
 	// 启动Watch清理goroutine
 	go w.cleanupWatch(watch)
-	
+
 	return watchID, watch.Chan
 }
 
@@ -149,18 +149,18 @@ func (w *Watcher) Watch(key string, prefix, prevKV bool) (int64, <-chan *WatchEv
 func (w *Watcher) Cancel(watchID int64) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	watch, exists := w.watches[watchID]
 	if !exists {
 		return fmt.Errorf("watch %d not found", watchID)
 	}
-	
+
 	w.closeWatch(watch)
 	delete(w.watches, watchID)
-	
+
 	// 从映射中移除
 	w.removeFromMapping(watch)
-	
+
 	return nil
 }
 
@@ -169,7 +169,7 @@ func (w *Watcher) Notify(eventType types.WatchEventType, key string, value, prev
 	if w.closed {
 		return
 	}
-	
+
 	event := &WatchEvent{
 		Type:      eventType,
 		Key:       key,
@@ -178,7 +178,7 @@ func (w *Watcher) Notify(eventType types.WatchEventType, key string, value, prev
 		Version:   version,
 		Timestamp: time.Now(),
 	}
-	
+
 	select {
 	case w.eventChan <- event:
 	default:
@@ -205,15 +205,15 @@ func (w *Watcher) eventLoop() {
 func (w *Watcher) distributeEvent(event *WatchEvent) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	
+
 	// 查找匹配的Watch
 	var watchIDs []int64
-	
+
 	// 精确匹配
 	if ids, exists := w.watchers["exact:"+event.Key]; exists {
 		watchIDs = append(watchIDs, ids...)
 	}
-	
+
 	// 前缀匹配
 	for prefix, ids := range w.watchers {
 		if len(prefix) > 7 && prefix[:7] == "prefix:" {
@@ -223,7 +223,7 @@ func (w *Watcher) distributeEvent(event *WatchEvent) {
 			}
 		}
 	}
-	
+
 	// 发送事件
 	for _, watchID := range watchIDs {
 		if watch, exists := w.watches[watchID]; exists {
@@ -250,7 +250,7 @@ func (w *Watcher) removeFromMapping(watch *Watch) {
 	} else {
 		key = "exact:" + watch.Key
 	}
-	
+
 	if ids, exists := w.watchers[key]; exists {
 		for i, id := range ids {
 			if id == watch.ID {
@@ -267,10 +267,10 @@ func (w *Watcher) removeFromMapping(watch *Watch) {
 // cleanupWatch 清理Watch（当上下文取消时）
 func (w *Watcher) cleanupWatch(watch *Watch) {
 	<-watch.ctx.Done()
-	
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	if _, exists := w.watches[watch.ID]; exists {
 		w.closeWatch(watch)
 		delete(w.watches, watch.ID)
@@ -289,7 +289,7 @@ func (w *Watcher) GetWatchCount() int {
 func (w *Watcher) GetWatchInfo() map[int64]WatchInfo {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	
+
 	info := make(map[int64]WatchInfo)
 	for id, watch := range w.watches {
 		info[id] = WatchInfo{
@@ -300,7 +300,7 @@ func (w *Watcher) GetWatchInfo() map[int64]WatchInfo {
 			Created: watch.Created,
 		}
 	}
-	
+
 	return info
 }
 

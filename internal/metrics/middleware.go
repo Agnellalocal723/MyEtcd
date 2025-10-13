@@ -16,20 +16,20 @@ HTTP指标中间件
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// 创建一个包装的ResponseWriter来捕获状态码
 		wrapped := &responseWriter{
 			ResponseWriter: w,
 			statusCode:     http.StatusOK, // 默认状态码
 		}
-		
+
 		// 调用下一个处理器
 		next.ServeHTTP(wrapped, r)
-		
+
 		// 记录指标
 		duration := time.Since(start)
 		metrics := GetMetrics()
-		
+
 		metrics.RecordHTTPRequest(r.Method, r.URL.Path, http.StatusText(wrapped.statusCode))
 		metrics.ObserveHTTPRequestDuration(r.Method, r.URL.Path, duration)
 	})

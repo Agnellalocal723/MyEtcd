@@ -38,7 +38,7 @@ type JSONConfig struct {
 	DataDir           string            `json:"data_dir"`
 	WALDir            string            `json:"wal_dir"`
 	SnapshotDir       string            `json:"snapshot_dir"`
-	SnapshotInterval  string            `json:"snapshot_interval"`  // 字符串表示的时间间隔
+	SnapshotInterval  string            `json:"snapshot_interval"` // 字符串表示的时间间隔
 	MaxWALSize        int64             `json:"max_wal_size"`
 	MaxSnapshots      int               `json:"max_snapshots"`
 	HeartbeatInterval string            `json:"heartbeat_interval"` // 字符串表示的时间间隔
@@ -214,7 +214,7 @@ func (l *JSONLoader) validateAndFillDefaults(config *types.Config) error {
 func LoadConfig(path string) (*types.Config, error) {
 	// 根据文件扩展名选择加载器
 	var loader Loader
-	
+
 	if len(path) > 5 && path[len(path)-5:] == ".json" {
 		loader = &JSONLoader{}
 	} else {
@@ -229,7 +229,7 @@ func LoadConfig(path string) (*types.Config, error) {
 func SaveConfig(config *types.Config, path string) error {
 	// 根据文件扩展名选择加载器
 	var loader Loader
-	
+
 	if len(path) > 5 && path[len(path)-5:] == ".json" {
 		loader = &JSONLoader{}
 	} else {
@@ -256,7 +256,7 @@ type ConfigManager struct {
 // NewConfigManager 创建配置管理器
 func NewConfigManager(configPath string) *ConfigManager {
 	var loader Loader
-	
+
 	if len(configPath) > 5 && configPath[len(configPath)-5:] == ".json" {
 		loader = &JSONLoader{}
 	} else {
@@ -275,7 +275,7 @@ func (cm *ConfigManager) Load() (*types.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	cm.config = config
 	return config, nil
 }
@@ -285,7 +285,7 @@ func (cm *ConfigManager) Save() error {
 	if cm.config == nil {
 		return fmt.Errorf("no config to save")
 	}
-	
+
 	return cm.loader.Save(cm.config, cm.configPath)
 }
 
