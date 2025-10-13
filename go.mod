@@ -1,6 +1,6 @@
 module myetcd
 
-go 1.23.0
+go 1.25.2
 
 require github.com/prometheus/client_golang v1.23.2
 
