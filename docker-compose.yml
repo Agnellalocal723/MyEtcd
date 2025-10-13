@@ -1,0 +1,209 @@
+version: '3.8'
+
+services:
+  # 单节点MyEtcd服务
+  myetcd-single:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myetcd-single
+    ports:
+      - "2379:2379"    # API端口
+      - "2380:2380"    # 指标端口
+      - "8080:8080"    # Raft端口
+    environment:
+      - MYETCD_NODE_ID=node1
+      - MYETCD_DATA_DIR=/app/data
+      - MYETCD_LOG_LEVEL=INFO
+    volumes:
+      - myetcd-single-data:/app/data
+      - myetcd-single-logs:/app/logs
+      - ./config:/app/config:ro
+    networks:
+      - myetcd-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2379/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # 三节点MyEtcd集群
+  myetcd-node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myetcd-node1
+    ports:
+      - "12379:2379"   # API端口
+      - "12380:2380"   # 指标端口
+      - "18080:8080"   # Raft端口
+    environment:
+      - MYETCD_NODE_ID=node1
+      - MYETCD_DATA_DIR=/app/data
+      - MYETCD_LOG_LEVEL=INFO
+      - MYETCD_CLUSTER_NODES=node1,node2,node3
+    volumes:
+      - myetcd-node1-data:/app/data
+      - myetcd-node1-logs:/app/logs
+      - ./config/cluster:/app/config:ro
+    networks:
+      - myetcd-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2379/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    profiles:
+      - cluster
+
+  myetcd-node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myetcd-node2
+    ports:
+      - "22379:2379"   # API端口
+      - "22380:2380"   # 指标端口
+      - "28080:8080"   # Raft端口
+    environment:
+      - MYETCD_NODE_ID=node2
+      - MYETCD_DATA_DIR=/app/data
+      - MYETCD_LOG_LEVEL=INFO
+      - MYETCD_CLUSTER_NODES=node1,node2,node3
+    volumes:
+      - myetcd-node2-data:/app/data
+      - myetcd-node2-logs:/app/logs
+      - ./config/cluster:/app/config:ro
+    networks:
+      - myetcd-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2379/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    profiles:
+      - cluster
+
+  myetcd-node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myetcd-node3
+    ports:
+      - "32379:2379"   # API端口
+      - "32380:2380"   # 指标端口
+      - "38080:8080"   # Raft端口
+    environment:
+      - MYETCD_NODE_ID=node3
+      - MYETCD_DATA_DIR=/app/data
+      - MYETCD_LOG_LEVEL=INFO
+      - MYETCD_CLUSTER_NODES=node1,node2,node3
+    volumes:
+      - myetcd-node3-data:/app/data
+      - myetcd-node3-logs:/app/logs
+      - ./config/cluster:/app/config:ro
+    networks:
+      - myetcd-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2379/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    profiles:
+      - cluster
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: myetcd-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - myetcd-network
+    profiles:
+      - monitoring
+    restart: unless-stopped
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: myetcd-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - myetcd-network
+    profiles:
+      - monitoring
+    restart: unless-stopped
+
+  # Nginx负载均衡器
+  nginx:
+    image: nginx:alpine
+    container_name: myetcd-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - myetcd-network
+    depends_on:
+      - myetcd-node1
+      - myetcd-node2
+      - myetcd-node3
+    profiles:
+      - cluster
+    restart: unless-stopped
+
+volumes:
+  myetcd-single-data:
+    driver: local
+  myetcd-single-logs:
+    driver: local
+  myetcd-node1-data:
+    driver: local
+  myetcd-node1-logs:
+    driver: local
+  myetcd-node2-data:
+    driver: local
+  myetcd-node2-logs:
+    driver: local
+  myetcd-node3-data:
+    driver: local
+  myetcd-node3-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  myetcd-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

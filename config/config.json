@@ -1,0 +1,17 @@
+{
+  "data_dir": "./data",
+  "wal_dir": "./data/wal",
+  "snapshot_dir": "./data/snapshot",
+  "snapshot_interval": "5m0s",
+  "max_wal_size": 67108864,
+  "max_snapshots": 3,
+  "heartbeat_interval": "100ms",
+  "election_timeout": "1s",
+  "node_id": "node1",
+  "cluster_nodes": [
+    "node1"
+  ],
+  "node_addresses": {
+    "node1": "localhost:8080"
+  }
+}

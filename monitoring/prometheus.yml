@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # MyEtcd单节点监控
+  - job_name: 'myetcd-single'
+    static_configs:
+      - targets: ['myetcd-single:2380']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # MyEtcd集群节点1监控
+  - job_name: 'myetcd-node1'
+    static_configs:
+      - targets: ['myetcd-node1:12380']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # MyEtcd集群节点2监控
+  - job_name: 'myetcd-node2'
+    static_configs:
+      - targets: ['myetcd-node2:22380']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # MyEtcd集群节点3监控
+  - job_name: 'myetcd-node3'
+    static_configs:
+      - targets: ['myetcd-node3:32380']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # Nginx监控（如果启用）
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    metrics_path: '/metrics'
+    scrape_interval: 5s

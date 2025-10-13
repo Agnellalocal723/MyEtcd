@@ -1,0 +1,105 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Test files
+tests/
+*_test.go
+test_*.go
+
+# Example files
+examples/
+
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Log files
+*.log
+logs/
+
+# Data files
+data/
+*.db
+*.sqlite
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Dependency directories
+vendor/
+
+# Go modules cache
+go.sum
+
+# Coverage files
+coverage/
+*.out
+*.cover
+
+# profiling files
+profile/
+*.prof
+*.pprof
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Monitoring files
+monitoring/
+grafana/
+prometheus/
+
+# Configuration overrides
+config/local/
+config/dev/
+config/test/
+
+# Scripts
+scripts/
+*.sh
+*.bat
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Local development
+.env
+.env.local
+.env.*.local
+
+# Package files
+*.tar.gz
+*.zip
+*.rar
+
+# Backup files
+*.bak
+*.backup

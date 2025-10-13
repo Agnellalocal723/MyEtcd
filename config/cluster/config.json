@@ -1,0 +1,21 @@
+{
+  "data_dir": "/app/data",
+  "wal_dir": "/app/data/wal",
+  "snapshot_dir": "/app/data/snapshot",
+  "snapshot_interval": "5m",
+  "max_wal_size": 67108864,
+  "max_snapshots": 3,
+  "heartbeat_interval": "100ms",
+  "election_timeout": "1s",
+  "node_id": "node1",
+  "cluster_nodes": [
+    "node1",
+    "node2",
+    "node3"
+  ],
+  "node_addresses": {
+    "node1": "myetcd-node1:8080",
+    "node2": "myetcd-node2:8080",
+    "node3": "myetcd-node3:8080"
+  }
+}
